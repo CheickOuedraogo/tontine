@@ -26,10 +26,11 @@ npm run init-db
 DATABASE_URL=postgresql://postgres:password@localhost:5432/tontine_db
 JWT_SECRET=changez_moi_en_production
 JWT_REFRESH_SECRET=changez_moi_aussi
-MAIL_HOST=smtp.gmail.com
-MAIL_PORT=587
-MAIL_USER=votre@email.com
-MAIL_PASS=votre_mot_de_passe_app
+
+# MailerSend (déjà configuré avec votre token)
+MAILERSEND_API_KEY=mlsn.5742ce6b15c6b42fcce334b76408512d9a630dae579fb917ec7c85258c66701a
+MAIL_FROM_EMAIL=noreply@trial-0r83ql3zx7pg2vwr.mlsender.net
+MAIL_FROM_NAME=Tontine
 ```
 
 ### 4. Démarrage
@@ -37,6 +38,9 @@ MAIL_PASS=votre_mot_de_passe_app
 ```bash
 # Tester la configuration
 npm run test-config
+
+# Tester l'envoi d'emails
+npm run test-email
 
 # Démarrer en mode développement
 npm run dev

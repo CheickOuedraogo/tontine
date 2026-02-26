@@ -39,9 +39,11 @@ cd backend
 npm install
 createdb tontine_db
 npm run init-db
+npm run test-email  # Tester l'envoi d'emails
 npm run dev
 ```
 
+Voir `backend/QUICK_TEST.md` pour un test complet en 3 minutes.
 Voir `backend/START_HERE.md` pour plus de détails.
 
 ### Frontend
@@ -55,7 +57,9 @@ cd frontend
 
 ### Backend
 - **START_HERE.md** - Point de départ
+- **QUICK_TEST.md** - Test rapide en 3 minutes
 - **QUICKSTART.md** - Guide de démarrage rapide
+- **MAILERSEND_SETUP.md** - Configuration email
 - **API.md** - Documentation complète de l'API
 - **API_SUMMARY.md** - Résumé des endpoints
 - **ARCHITECTURE.md** - Architecture détaillée
@@ -95,7 +99,7 @@ Importer `backend/postman_collection.json` pour tester l'API.
 - Socket.io
 - JWT (jsonwebtoken)
 - Bcrypt
-- Nodemailer
+- MailerSend (emails)
 - Joi (validation)
 - Node-cron
 
@@ -130,6 +134,7 @@ Voir `backend/schema.sql` pour le schéma complet.
 ```bash
 cd backend
 npm run test-config  # Tester la configuration
+npm run test-email   # Tester l'envoi d'emails
 ```
 
 Importer `postman_collection.json` dans Postman pour tester l'API.
@@ -141,7 +146,7 @@ Voir `backend/DEPLOYMENT.md` pour le guide complet.
 ### Prérequis
 - Node.js 18+
 - PostgreSQL 14+
-- Compte SMTP (Gmail recommandé)
+- Compte MailerSend (gratuit, déjà configuré)
 
 ### Variables d'environnement
 Voir `backend/.env.example` et `backend/.env.production.example`
@@ -180,3 +185,7 @@ Le backend est prêt pour l'intégration et le déploiement!
 ---
 
 **Démarrez ici:** `backend/START_HERE.md` 🚀
+
+**Test rapide:** `backend/QUICK_TEST.md` ⚡
+
+**Configuration email:** `backend/MAILERSEND_READY.md` 📧

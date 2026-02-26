@@ -44,11 +44,21 @@ npm run dev
 npm start
 ```
 
-## Configuration Email (Gmail)
+## Configuration Email (MailerSend)
 
-1. Activer l'authentification à 2 facteurs sur votre compte Gmail
-2. Générer un mot de passe d'application: https://myaccount.google.com/apppasswords
-3. Utiliser ce mot de passe dans `MAIL_PASS`
+Le projet utilise MailerSend pour l'envoi d'emails.
+
+### Configuration actuelle
+Votre token MailerSend est déjà configuré dans `.env`:
+- Token: `mlsn.5742ce6b15c6b42fcce334b76408512d9a630dae579fb917ec7c85258c66701a`
+- Domaine: `noreply@trial-0r83ql3zx7pg2vwr.mlsender.net`
+
+### Test
+```bash
+npm run test-email
+```
+
+Voir `MAILERSEND_SETUP.md` pour plus de détails.
 
 ## Variables d'environnement
 

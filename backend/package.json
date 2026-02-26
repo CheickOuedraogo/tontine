@@ -6,6 +6,7 @@
     "express": "^5.2.1",
     "joi": "^18.0.2",
     "jsonwebtoken": "^9.0.3",
+    "mailersend": "^2.3.0",
     "multer": "^2.0.2",
     "node-cron": "^4.2.1",
     "nodemailer": "^8.0.1",
@@ -22,6 +23,7 @@
     "dev": "nodemon index.js",
     "start": "node index.js",
     "init-db": "node init-db.js",
-    "test-config": "node test-server.js"
+    "test-config": "node test-server.js",
+    "test-email": "node test-email.js"
   }
 }

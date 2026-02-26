@@ -18,15 +18,21 @@ npm run init-db
 ```
 
 ### 3️⃣ Configuration .env
-Le fichier `.env` est déjà créé. Modifiez-le avec vos paramètres:
+Le fichier `.env` est déjà créé avec votre token MailerSend configuré.
+
+Vérifiez/modifiez si nécessaire:
 - `DATABASE_URL` - Connexion PostgreSQL
 - `JWT_SECRET` - Secret pour les tokens
-- `MAIL_USER` et `MAIL_PASS` - Configuration email
+- `MAILERSEND_API_KEY` - Déjà configuré avec votre token
+- `MAIL_FROM_EMAIL` - Email expéditeur (domaine de test fourni)
 
 ### 4️⃣ Démarrage
 ```bash
 # Tester la configuration
 npm run test-config
+
+# Tester l'envoi d'emails (optionnel)
+npm run test-email
 
 # Démarrer le serveur
 npm run dev
@@ -39,6 +45,7 @@ Le serveur démarre sur http://localhost:3000 🎉
 | Fichier | Description |
 |---------|-------------|
 | **QUICKSTART.md** | Guide de démarrage détaillé |
+| **MAILERSEND_SETUP.md** | Configuration MailerSend |
 | **API.md** | Documentation complète des endpoints |
 | **API_SUMMARY.md** | Résumé visuel de l'API |
 | **ARCHITECTURE.md** | Architecture du projet |
@@ -97,6 +104,7 @@ npm run dev          # Démarrage développement (avec nodemon)
 npm start            # Démarrage production
 npm run init-db      # Initialiser/réinitialiser la base
 npm run test-config  # Tester la configuration
+npm run test-email   # Tester l'envoi d'emails
 ```
 
 ## 🆘 Besoin d'Aide?
