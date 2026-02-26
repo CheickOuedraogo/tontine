@@ -1,0 +1,23 @@
+require('dotenv').config();
+const { Pool } = require('pg');
+const fs = require('fs');
+const path = require('path');
+
+const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+
+async function initDatabase() {
+  try {
+    console.log('Initialisation de la base de donnees...');
+    
+    const schema = fs.readFileSync(path.join(__dirname, 'schema.sql'), 'utf8');
+    await pool.query(schema);
+    
+    console.log('Base de donnees initialisee avec succes!');
+    process.exit(0);
+  } catch (error) {
+    console.error('Erreur lors de l\'initialisation:', error);
+    process.exit(1);
+  }
+}
+
+initDatabase();
