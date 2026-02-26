@@ -43,11 +43,7 @@ Votre backend est entièrement implémenté, configuré et prêt pour:
 
 ### ✅ Prêt à l'emploi
 
-```
-Token: mlsn.5742ce6b15c6b42fcce334b76408512d9a630dae579fb917ec7c85258c66701a
-Domaine: noreply@trial-0r83ql3zx7pg2vwr.mlsender.net
-Limites: 100 emails/jour (gratuit)
-```
+
 
 ### Test
 ```bash
