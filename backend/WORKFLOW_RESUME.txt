@@ -1,0 +1,174 @@
+╔══════════════════════════════════════════════════════════════════════════════╗
+║              WORKFLOW INVITATION & VÉRIFICATION D'IDENTITÉ                   ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ 1️⃣  CRÉATEUR INVITE UN MEMBRE                                               │
+└─────────────────────────────────────────────────────────────────────────────┘
+   POST /api/invitations/tontine/:tontineId
+   { "emailInvite": "nouveau@example.com" }
+   
+   ✅ Email envoyé avec lien d'invitation
+   ✅ Token unique généré
+   ✅ Expiration: 7 jours
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ 2️⃣  INVITÉ CONSULTE L'INVITATION                                            │
+└─────────────────────────────────────────────────────────────────────────────┘
+   GET /api/invitations/:token
+   
+   ✅ Voir détails de la tontine
+   ✅ Montant, fréquence, durée
+   ✅ Nombre de membres
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ 3️⃣  INVITÉ S'INSCRIT (si pas encore de compte)                              │
+└─────────────────────────────────────────────────────────────────────────────┘
+   POST /api/auth/register
+   POST /api/auth/verify-email (code OTP)
+   POST /api/auth/login
+   
+   ✅ Compte créé
+   ✅ Email vérifié
+   ✅ Connecté
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ 4️⃣  INVITÉ UPLOAD SA CNIB                                                   │
+└─────────────────────────────────────────────────────────────────────────────┘
+   POST /api/users/me/cnib
+   { "urlCnib": "https://storage.example.com/cnib.jpg" }
+   
+   ✅ CNIB uploadée dans le profil
+   ✅ Prêt pour accepter l'invitation
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ 5️⃣  INVITÉ ACCEPTE L'INVITATION                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+   POST /api/invitations/:token/accepter
+   
+   Vérifications automatiques:
+   ✅ Email correspond à l'invitation
+   ✅ CNIB uploadée
+   ✅ Invitation valide
+   
+   Résultat:
+   ✅ Ajouté à la tontine
+   ✅ Statut: EN_ATTENTE
+   ✅ Créateur notifié
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ 6️⃣  CRÉATEUR VÉRIFIE L'IDENTITÉ                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+   GET /api/verifications/tontine/:tontineId
+   
+   ✅ Liste des membres en attente
+   ✅ Voir CNIB de chaque membre
+   ✅ Informations complètes
+
+   ┌─────────────────────────────────────────────────────────────────────────┐
+   │ Option A: VALIDER                                                       │
+   └─────────────────────────────────────────────────────────────────────────┘
+   POST /api/verifications/participation/:id/valider
+   
+   ✅ Statut → VERIFIE
+   ✅ Membre notifié
+   ✅ Peut signer le contrat
+
+   ┌─────────────────────────────────────────────────────────────────────────┐
+   │ Option B: REJETER                                                       │
+   └─────────────────────────────────────────────────────────────────────────┘
+   POST /api/verifications/participation/:id/rejeter
+   { "motif": "Photo ne correspond pas" }
+   
+   ✅ Statut → REJETE
+   ✅ Membre notifié avec motif
+   ✅ Conservé pour historique
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ 7️⃣  MEMBRE SIGNE LE CONTRAT (si identité validée)                           │
+└─────────────────────────────────────────────────────────────────────────────┘
+   POST /api/contrats/:contratId/signer
+   
+   ✅ Signature enregistrée
+   ✅ IP address sauvegardée
+   ✅ Prêt pour le démarrage
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ 8️⃣  CRÉATEUR DÉMARRE LA TONTINE                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+   POST /api/tontines/:tontineId/start
+   
+   Conditions:
+   ✅ Nombre de membres atteint
+   ✅ Toutes identités vérifiées
+   ✅ Tous contrats signés
+   
+   Résultat:
+   ✅ Ordre de distribution généré
+   ✅ Cotisations créées
+   ✅ Tontine ACTIVE
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ 9️⃣  PAIEMENTS (Simulation)                                                  │
+└─────────────────────────────────────────────────────────────────────────────┘
+   POST /api/cotisations/:cotisationId/simuler-paiement
+   
+   ✅ Référence générée: SIM-xxxxx
+   ✅ Cotisation marquée PAYEE
+   ✅ Distribution auto si tous ont payé
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📊 STATUTS DE VÉRIFICATION
+
+┌─────────────────┬──────────────────────────────────────────────────────────┐
+│ NON_SOUMIS      │ Membre ajouté mais CNIB non uploadée                    │
+├─────────────────┼──────────────────────────────────────────────────────────┤
+│ EN_ATTENTE      │ CNIB soumise, en attente de validation créateur         │
+├─────────────────┼──────────────────────────────────────────────────────────┤
+│ VERIFIE         │ Identité validée, peut signer le contrat                │
+├─────────────────┼──────────────────────────────────────────────────────────┤
+│ REJETE          │ Identité rejetée, ne peut pas participer                │
+└─────────────────┴──────────────────────────────────────────────────────────┘
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📧 NOTIFICATIONS AUTOMATIQUES
+
+Pour le CRÉATEUR:
+  • Nouvelle demande d'adhésion (quand invité accepte)
+  • Vérification soumise (quand membre upload CNIB)
+
+Pour le MEMBRE:
+  • Identité validée (peut signer le contrat)
+  • Identité rejetée (avec motif)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🔐 SÉCURITÉ
+
+✅ Token unique et sécurisé pour chaque invitation
+✅ Expiration automatique après 7 jours
+✅ Vérification email = invitation
+✅ CNIB obligatoire avant acceptation
+✅ Validation manuelle par le créateur
+✅ Traçabilité complète (IP, dates)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✨ POINTS CLÉS
+
+1. Invitation par email avec lien unique
+2. Inscription obligatoire sur la plateforme
+3. Upload CNIB obligatoire
+4. Validation manuelle par le créateur
+5. Signature du contrat après validation
+6. Paiements simulés pour les tests
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📚 DOCUMENTATION COMPLÈTE
+
+Voir: backend/WORKFLOW_INVITATION.md
+
+╚══════════════════════════════════════════════════════════════════════════════╝

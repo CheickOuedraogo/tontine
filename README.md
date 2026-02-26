@@ -55,16 +55,26 @@ cd frontend
 
 ## 📚 Documentation
 
+### 🎓 Pour Commencer (Nouveau!)
+- **[GUIDE_DEMARRAGE_RAPIDE.md](GUIDE_DEMARRAGE_RAPIDE.md)** ⭐ - Démarrer en 5 minutes
+- **[RESUME_PROJET.md](RESUME_PROJET.md)** ⭐ - Vue d'ensemble complète
+- **[CARTE_REFERENCE_RAPIDE.md](CARTE_REFERENCE_RAPIDE.md)** ⭐ - Aide-mémoire
+- **[STRUCTURE_VISUELLE.txt](STRUCTURE_VISUELLE.txt)** ⭐ - Diagrammes
+- **[INDEX_DOCUMENTATION.md](INDEX_DOCUMENTATION.md)** - Index complet
+
 ### Backend
-- **START_HERE.md** - Point de départ
-- **QUICK_TEST.md** - Test rapide en 3 minutes
-- **QUICKSTART.md** - Guide de démarrage rapide
-- **MAILERSEND_SETUP.md** - Configuration email
-- **API.md** - Documentation complète de l'API
-- **API_SUMMARY.md** - Résumé des endpoints
-- **ARCHITECTURE.md** - Architecture détaillée
-- **DEPLOYMENT.md** - Guide de déploiement
-- **PROJECT_STATUS.md** - État du projet
+- **backend/START_HERE.md** - Point de départ
+- **backend/ETAT_ACTUEL.md** ⭐ - État détaillé du backend
+- **backend/WORKFLOW_INVITATION.md** ⭐ - Processus d'invitation complet
+- **backend/NOUVELLES_FONCTIONNALITES.md** - Dernières fonctionnalités
+- **backend/QUICK_TEST.md** - Test rapide en 3 minutes
+- **backend/QUICKSTART.md** - Guide de démarrage rapide
+- **backend/MAILERSEND_SETUP.md** - Configuration email
+- **backend/API.md** - Documentation complète de l'API
+- **backend/API_SUMMARY.md** - Résumé des endpoints
+- **backend/ARCHITECTURE.md** - Architecture détaillée
+- **backend/DEPLOYMENT.md** - Guide de déploiement
+- **backend/PROJECT_STATUS.md** - État du projet
 
 ### Collection Postman
 Importer `backend/postman_collection.json` pour tester l'API.

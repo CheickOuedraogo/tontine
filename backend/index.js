@@ -18,6 +18,7 @@ app.use('/api/cotisations',   require('./src/routes/cotisations.routes'));
 app.use('/api/distributions', require('./src/routes/distributions.routes'));
 app.use('/api/contrats',      require('./src/routes/contrats.routes'));
 app.use('/api/invitations',   require('./src/routes/invitations.routes'));
+app.use('/api/verifications', require('./src/routes/verifications.routes'));
 app.use('/api/notifications', require('./src/routes/notifications.routes'));
 
 app.use(errorHandler);
