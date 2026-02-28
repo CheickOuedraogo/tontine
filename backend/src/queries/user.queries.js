@@ -16,7 +16,7 @@ const findByEmail = async (email) => {
 const create = async ({ nom, prenom, email, motDePasseHash, telephone }) => {
   const { rows } = await db.query(
     `INSERT INTO "User" (nom, prenom, email, "motDePasseHash", telephone, "estVerifie")
-     VALUES ($1, $2, $3, $4, $5, true) RETURNING *`,
+     VALUES ($1, $2, $3, $4, $5, false) RETURNING *`,
     [nom, prenom, email, motDePasseHash, telephone]
   );
   return rows[0];

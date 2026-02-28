@@ -38,6 +38,9 @@ export const LoginScreen = () => {
         } catch (err: any) {
             const msg = err.response?.data?.message || 'Erreur de connexion au serveur.';
             setError(msg);
+            if (err.response?.status === 403) {
+                navigation.navigate('VerifyEmail', { email: email.trim() });
+            }
         } finally {
             setIsLoading(false);
         }

@@ -48,9 +48,7 @@ export const RegisterScreen = () => {
 
             if (response.data.success) {
                 setSuccess('Compte créé avec succès ! Vérifiez votre email pour activer votre compte, puis connectez-vous.');
-                setTimeout(() => {
-                    navigation.navigate('Login');
-                }, 3000);
+                navigation.navigate('VerifyEmail', { email });
             } else {
                 setError(response.data.message || 'Erreur lors de la création du compte.');
             }
