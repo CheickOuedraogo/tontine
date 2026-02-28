@@ -10,7 +10,11 @@ interface TontineState {
     fetchMyTontines: () => Promise<void>;
     fetchTontineDetails: (id: string) => Promise<void>;
     createTontine: (data: CreateTontinePayload) => Promise<Tontine | null>;
+    demanderDeblocage: (id: string) => Promise<boolean>;
+    validerDeblocage: (id: string, valider: boolean) => Promise<boolean>;
+    quitterEtRetirer: (id: string) => Promise<boolean>;
 }
+
 
 export const useTontineStore = create<TontineState>((set) => ({
     tontines: [],
@@ -62,4 +66,43 @@ export const useTontineStore = create<TontineState>((set) => ({
             return null;
         }
     },
+
+    demanderDeblocage: async (id: string) => {
+        try {
+            await tontineApi.demanderDeblocage(id);
+            const data = await tontineApi.getTontineDetails(id);
+            set({ currentTontine: data });
+            return true;
+        } catch (error: any) {
+            set({ error: error.response?.data?.message || 'Erreur déblocage' });
+            return false;
+        }
+    },
+
+    validerDeblocage: async (id: string, valider: boolean) => {
+        try {
+            await tontineApi.validerDeblocage(id, valider);
+            const data = await tontineApi.getTontineDetails(id);
+            set({ currentTontine: data });
+            return true;
+        } catch (error: any) {
+            set({ error: error.response?.data?.message || 'Erreur validation' });
+            return false;
+        }
+    },
+
+    quitterEtRetirer: async (id: string) => {
+        try {
+            await tontineApi.quitterEtRetirer(id);
+            set((state) => ({
+                tontines: state.tontines.filter(t => t.id !== id),
+                currentTontine: null
+            }));
+            return true;
+        } catch (error: any) {
+            set({ error: error.response?.data?.message || 'Erreur lors du départ' });
+            return false;
+        }
+    },
 }));
+

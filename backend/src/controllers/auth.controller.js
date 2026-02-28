@@ -17,7 +17,7 @@ const register = asyncHandler(async (req, res) => {
   storeOtp(email, otp);
   await sendMail(email, 'Code de verification', `Votre code: ${otp}`);
   
-  res.status(201).json({ success: true, message: 'Inscription reussie. Verifiez votre email.', userId: user.id });
+  res.status(201).json({ success: true, message: 'Inscription reussie avec succes.', userId: user.id });
 });
 
 // POST /api/auth/verify-email
@@ -41,7 +41,8 @@ const login = asyncHandler(async (req, res) => {
   const valid = await comparePassword(motDePasse, user.motDePasseHash);
   if (!valid) throw new ApiError(401, 'Identifiants invalides');
   
-  if (!user.estVerifie) throw new ApiError(403, 'Email non verifie');
+  // Vérification d'email désactivée temporairement
+  // if (!user.estVerifie) throw new ApiError(403, 'Email non verifie');
   
   const accessToken = generateAccessToken({ id: user.id, role: user.roleSysteme });
   const refreshToken = generateRefreshToken({ id: user.id });

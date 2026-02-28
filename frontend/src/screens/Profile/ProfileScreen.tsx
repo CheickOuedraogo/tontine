@@ -12,6 +12,7 @@ export const ProfileScreen = () => {
     const logout = useAuthStore(state => state.logout);
     const setAuth = useAuthStore(state => state.setAuth);
     const token = useAuthStore(state => state.token);
+    const refreshToken = useAuthStore(state => state.refreshToken);
 
     const [nom, setNom] = useState(user?.nom || '');
     const [prenom, setPrenom] = useState(user?.prenom || '');
@@ -31,7 +32,7 @@ export const ProfileScreen = () => {
                 telephone: telephone.trim() || undefined,
             });
             if (res.data.success && token) {
-                await setAuth(token, res.data.data);
+                await setAuth(token, refreshToken ?? '', res.data.data);
                 setMessage('Profil mis à jour avec succès !');
             }
         } catch (err: any) {

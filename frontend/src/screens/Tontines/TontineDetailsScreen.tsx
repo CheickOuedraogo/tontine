@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, ScrollView, ActivityIndicator, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, ScrollView, ActivityIndicator, TouchableOpacity, Alert } from 'react-native';
 import { theme } from '../../theme';
 import { useTontineStore } from '../../store/useTontineStore';
 import { useAuthStore } from '../../store/useAuthStore';
@@ -17,8 +17,9 @@ export const TontineDetailsScreen = () => {
     const { id } = route.params;
     const user = useAuthStore(state => state.user);
 
-    const { currentTontine, isLoading, fetchTontineDetails } = useTontineStore();
+    const { currentTontine, isLoading, fetchTontineDetails, demanderDeblocage, validerDeblocage, quitterEtRetirer } = useTontineStore();
     const [membresCount, setMembresCount] = useState(0);
+    const [isActionLoading, setIsActionLoading] = useState(false);
 
     const loadData = useCallback(() => {
         fetchTontineDetails(id);
@@ -29,6 +30,29 @@ export const TontineDetailsScreen = () => {
     }, [id]);
 
     useFocusEffect(loadData);
+
+    const handleDemanderDeblocage = async () => {
+        Alert.alert('Déblocage', 'Voulez-vous vraiment demander le déblocage des fonds ? Tous les membres devront valider.', [
+            { text: 'Annuler', style: 'cancel' },
+            { text: 'Confirmer', onPress: () => demanderDeblocage(id) }
+        ]);
+    };
+
+    const handleValider = (v: boolean) => {
+        const msg = v ? 'Voulez-vous valider le déblocage ?' : 'Si vous refusez, vous devrez quitter la tontine et retirer vos fonds.';
+        Alert.alert(v ? 'Valider' : 'Refuser', msg, [
+            { text: 'Annuler', style: 'cancel' },
+            {
+                text: 'Confirmer', onPress: async () => {
+                    if (v) await validerDeblocage(id, true);
+                    else {
+                        await quitterEtRetirer(id);
+                        navigation.navigate('Tontines');
+                    }
+                }
+            }
+        ]);
+    };
 
     if (isLoading || !currentTontine) {
         return (
@@ -78,6 +102,47 @@ export const TontineDetailsScreen = () => {
                         <Text style={styles.statLabel}>Membres</Text>
                     </View>
                 </View>
+
+                {/* Additional Details for ACHAT_COMMUN */}
+                <View style={styles.infoCard}>
+                    <View style={styles.infoRow}>
+                        <Info size={18} color="#6366F1" />
+                        <Text style={styles.infoText}>
+                            Type: <Text style={{ fontWeight: 'bold' }}>{currentTontine.type === 'ACHAT_COMMUN' ? '🛍️ Achat Commun' : '♻️ Classique'}</Text>
+                        </Text>
+                    </View>
+                    {currentTontine.type === 'ACHAT_COMMUN' && (
+                        <View style={[styles.infoRow, { marginTop: 8 }]}>
+                            <CreditCard size={18} color="#059669" />
+                            <Text style={styles.infoText}>
+                                Déblocage: <Text style={{ fontWeight: 'bold' }}>{currentTontine.statutDeblocage}</Text>
+                            </Text>
+                        </View>
+                    )}
+                </View>
+
+                {/* Unlocking Actions */}
+                {currentTontine.type === 'ACHAT_COMMUN' && (
+                    <View style={styles.actionSection}>
+                        {isCreator && currentTontine.statutDeblocage === 'NON_DEMANDE' && (
+                            <Button title="🚀 Demander le Déblocage" onPress={handleDemanderDeblocage} />
+                        )}
+                        {currentTontine.statutDeblocage === 'EN_ATTENTE' && (
+                            <View style={{ gap: 10 }}>
+                                <Text style={styles.waitingText}>💡 Le créateur demande le déblocage des fonds. Votre avis est requis.</Text>
+                                <View style={{ flexDirection: 'row', gap: 10 }}>
+                                    <Button title="✅ Valider" onPress={() => handleValider(true)} style={{ flex: 1 }} />
+                                    <Button title="❌ Refuser & Quitter" variant="danger" onPress={() => handleValider(false)} style={{ flex: 1 }} />
+                                </View>
+                            </View>
+                        )}
+                        {currentTontine.statutDeblocage === 'VALIDE' && (
+                            <View style={styles.successBox}>
+                                <Text style={styles.successText}>🎉 Déblocage validé par tous les membres !</Text>
+                            </View>
+                        )}
+                    </View>
+                )}
 
                 {/* Action Grid */}
                 <Text style={styles.sectionTitle}>Actions</Text>
@@ -129,6 +194,7 @@ export const TontineDetailsScreen = () => {
                         />
                     )}
                 </View>
+
             </ScrollView>
         </SafeAreaView>
     );
@@ -160,4 +226,11 @@ const styles = StyleSheet.create({
     actionCard: { width: '47%', backgroundColor: '#FFFFFF', borderRadius: 14, padding: 18, alignItems: 'center', boxShadow: '0px 2px 8px rgba(0,0,0,0.05)', elevation: 2 },
     actionTitle: { fontSize: 14, fontWeight: '700', color: '#1E1B4B', marginTop: 8 },
     actionSubtitle: { fontSize: 11, color: '#64748B', textAlign: 'center', marginTop: 2 },
+    infoCard: { backgroundColor: '#FFFFFF', borderRadius: 14, padding: 16, marginBottom: 20, borderLeftWidth: 4, borderLeftColor: '#6366F1', boxShadow: '0px 2px 8px rgba(0,0,0,0.05)', elevation: 2 },
+    infoRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+    infoText: { fontSize: 14, color: '#1E1B4B' },
+    actionSection: { backgroundColor: '#EEF2FF', borderRadius: 16, padding: 18, marginBottom: 20, borderWidth: 1, borderColor: '#C7D2FE' },
+    waitingText: { fontSize: 13, color: '#4338CA', fontWeight: '600', marginBottom: 12, lineHeight: 18 },
+    successBox: { backgroundColor: '#ECFDF5', borderRadius: 12, padding: 14, alignItems: 'center', borderWidth: 1, borderColor: '#A7F3D0' },
+    successText: { color: '#065F46', fontWeight: 'bold', fontSize: 14 },
 });

@@ -51,9 +51,10 @@ const calculerDatesCycles = (dateDebut, frequence, nbCycles) => {
   const base = new Date(dateDebut);
   for (let i = 0; i < nbCycles; i++) {
     const d = new Date(base);
-    if (frequence === 'MENSUEL')       d.setMonth(base.getMonth() + i);
+    if (frequence === 'MENSUELLE')      d.setMonth(base.getMonth() + i);
     if (frequence === 'HEBDOMADAIRE')  d.setDate(base.getDate() + i * 7);
-    if (frequence === 'QUOTIDIEN')     d.setDate(base.getDate() + i);
+    if (frequence === 'QUOTIDIENNE')   d.setDate(base.getDate() + i);
+    if (frequence === 'TRIMESTRIELLE') d.setMonth(base.getMonth() + i * 3);
     dates.push(d);
   }
   return dates;

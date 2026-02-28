@@ -32,7 +32,8 @@ const schemas = {
     frequence: Joi.string().valid('QUOTIDIENNE', 'HEBDOMADAIRE', 'MENSUELLE', 'TRIMESTRIELLE').required(),
     dureeTotale: Joi.number().integer().positive().required(),
     nbMembresAttendu: Joi.number().integer().positive().required(),
-    pourcentageFrais: Joi.number().min(0).max(100).optional()
+    pourcentageFrais: Joi.number().min(0).max(100).optional(),
+    type: Joi.string().valid('CLASSIQUE', 'ACHAT_COMMUN').optional()
   }),
   
   payerCotisation: Joi.object({

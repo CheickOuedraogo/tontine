@@ -7,6 +7,8 @@ const { errorHandler } = require('./src/middlewares/errorHandler');
 const corsOptions = require('./src/config/cors');
 
 const app = express();
+
+// Pré-flight CORS : répondre à toutes les routes OPTIONS avant tout autre middleware
 app.use(cors(corsOptions));
 app.use(express.json());
 
@@ -23,9 +25,15 @@ app.use('/api/notifications', require('./src/routes/notifications.routes'));
 
 app.use(errorHandler);
 
-// Socket.io
+// ── Socket.io ────────────────────────────────────────────────────────────────
 const server = http.createServer(app);
-const io = new Server(server, { cors: { origin: process.env.FRONTEND_URL } });
+const io = new Server(server, {
+  cors: {
+    origin: corsOptions.origin,
+    credentials: true,
+    methods: corsOptions.methods,
+  },
+});
 
 io.use((socket, next) => {
   const { verifyAccessToken } = require('./src/utils/helpers');
@@ -53,5 +61,15 @@ io.on('connection', (socket) => {
 // CRON
 require('./src/jobs/cron');
 
+// ── Sécurité process ─────────────────────────────────────────────────────────
+process.on('uncaughtException', (err) => {
+  console.error('[uncaughtException]', err);
+  process.exit(1);
+});
+process.on('unhandledRejection', (reason) => {
+  console.error('[unhandledRejection]', reason);
+});
+
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => console.log(`Serveur demarre sur le port ${PORT}`));
+

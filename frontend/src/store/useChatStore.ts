@@ -1,9 +1,7 @@
 import { create } from 'zustand';
 import { io, Socket } from 'socket.io-client';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-
-// Remplacer par l'URL du backend en production/réseau local
-const SOCKET_URL = 'http://localhost:3000';
+import { SOCKET_URL } from '../constants';
 
 export interface ChatMessage {
     id: string;

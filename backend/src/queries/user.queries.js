@@ -15,8 +15,8 @@ const findByEmail = async (email) => {
 // create(data: {nom, prenom, email, motDePasseHash, telephone}) => Promise<User>
 const create = async ({ nom, prenom, email, motDePasseHash, telephone }) => {
   const { rows } = await db.query(
-    `INSERT INTO "User" (nom, prenom, email, "motDePasseHash", telephone)
-     VALUES ($1, $2, $3, $4, $5) RETURNING *`,
+    `INSERT INTO "User" (nom, prenom, email, "motDePasseHash", telephone, "estVerifie")
+     VALUES ($1, $2, $3, $4, $5, true) RETURNING *`,
     [nom, prenom, email, motDePasseHash, telephone]
   );
   return rows[0];

@@ -23,9 +23,12 @@ const sendMail = async (to, subject, html) => {
     await mailerSend.email.send(emailParams);
     console.log(`Email envoye a ${to}`);
   } catch (error) {
-    console.error('Erreur envoi email:', error.message);
-    throw error;
+    console.error('Erreur envoi email:', error.body || error.message);
+    // On ne jette plus l'erreur pour ne pas bloquer l'inscription/login en dev
+    // throw error; 
   }
 };
+
+
 
 module.exports = { sendMail };

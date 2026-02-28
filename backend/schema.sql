@@ -27,6 +27,11 @@ CREATE TYPE type_message_enum AS ENUM ('text', 'system');
 
 CREATE TYPE statut_verif_enum AS ENUM ('NON_SOUMIS', 'EN_ATTENTE', 'VERIFIE', 'REJETE');
 
+CREATE TYPE type_tontine_enum AS ENUM ('CLASSIQUE', 'ACHAT_COMMUN');
+
+CREATE TYPE statut_deblocage_enum AS ENUM ('NON_DEMANDE', 'EN_ATTENTE', 'VALIDE', 'REJETE');
+
+
 -- =============================================
 -- TABLES
 -- =============================================
@@ -59,8 +64,11 @@ CREATE TABLE "Tontine" (
     "dateFin"           DATE,
     statut              statut_tontine_enum NOT NULL DEFAULT 'EN_ATTENTE',
     "pourcentageFrais"  NUMERIC(5, 2) NOT NULL DEFAULT 0,
-    "creatorId"         UUID NOT NULL REFERENCES "User"(id) ON DELETE RESTRICT
+    "creatorId"         UUID NOT NULL REFERENCES "User"(id) ON DELETE RESTRICT,
+    "type"              type_tontine_enum NOT NULL DEFAULT 'CLASSIQUE',
+    "statutDeblocage"   statut_deblocage_enum NOT NULL DEFAULT 'NON_DEMANDE'
 );
+
 
 -- Table Participation
 CREATE TABLE "Participation" (
@@ -73,8 +81,10 @@ CREATE TABLE "Participation" (
     "aSigneContrat"       BOOLEAN NOT NULL DEFAULT FALSE,
     "statutVerifIdentite" statut_verif_enum NOT NULL DEFAULT 'NON_SOUMIS',
     "pieceIdentiteUrl"    TEXT,
+    "aValideDeblocage"  BOOLEAN NOT NULL DEFAULT FALSE,
     UNIQUE ("userId", "tontineId")
 );
+
 
 -- Table Cotisation
 CREATE TABLE "Cotisation" (

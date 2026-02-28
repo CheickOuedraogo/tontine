@@ -3,7 +3,12 @@
 // errorHandler(err, req, res, next) => void
 const errorHandler = (err, req, res, next) => {
   const statusCode = err instanceof ApiError ? err.statusCode : 500;
+  // Logger uniquement les erreurs serveur inattendues
+  if (statusCode >= 500) {
+    console.error(`[${new Date().toISOString()}] ${req.method} ${req.path} —`, err);
+  }
   res.status(statusCode).json({ success: false, message: err.message || 'Erreur serveur' });
 };
 
 module.exports = { errorHandler };
+

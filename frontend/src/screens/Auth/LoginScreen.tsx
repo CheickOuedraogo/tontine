@@ -30,8 +30,8 @@ export const LoginScreen = () => {
             });
 
             if (response.data.success) {
-                const { token, user } = response.data.data;
-                await setAuth(token, user);
+                const { accessToken, refreshToken, user } = response.data;
+                await setAuth(accessToken, refreshToken, user);
             } else {
                 setError(response.data.message || 'Identifiants incorrects.');
             }
