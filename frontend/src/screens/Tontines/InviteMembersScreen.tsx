@@ -1,24 +1,52 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
 import { theme } from '../../theme';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { apiClient } from '../../api/client';
 import { useRoute, useNavigation } from '@react-navigation/native';
-import { UserPlus, Mail, Link2, CheckCircle, Copy, Check } from 'lucide-react-native';
+import { UserPlus, Mail, CheckCircle, Clock, XCircle, ArrowLeft, AlertCircle } from 'lucide-react-native';
+import { useAuthStore } from '../../store/useAuthStore';
 
 export const InviteMembersScreen = () => {
     const route = useRoute<any>();
     const navigation = useNavigation<any>();
     const { tontineId, tontineName } = route.params;
+    const currentUser = useAuthStore(state => state.user);
 
     const [email, setEmail] = useState('');
     const [isLoading, setIsLoading] = useState(false);
-    const [invitedList, setInvitedList] = useState<string[]>([]);
     const [error, setError] = useState('');
-    const [copied, setCopied] = useState(false);
+    const [invitations, setInvitations] = useState<any[]>([]);
+    const [tontine, setTontine] = useState<any>(null);
+    const [checkingAccess, setCheckingAccess] = useState(true);
 
-    const joinLink = `${window.location.origin}/join/${tontineId}`;
+    useEffect(() => {
+        checkAccess();
+    }, []);
+
+    const checkAccess = async () => {
+        try {
+            const res = await apiClient.get(`/tontines/${tontineId}`);
+            const tontineData = res.data.tontine || res.data;
+            setTontine(tontineData);
+            
+            if (tontineData.creatorId === currentUser?.id) {
+                loadInvitations();
+            }
+        } catch (err) {
+            // Access check failed
+        } finally {
+            setCheckingAccess(false);
+        }
+    };
+
+    const loadInvitations = async () => {
+        try {
+            const res = await apiClient.get(`/invitations/tontine/${tontineId}`);
+            setInvitations(res.data.invitations || []);
+        } catch { }
+    };
 
     const handleInvite = async () => {
         if (!email.trim()) {
@@ -31,9 +59,9 @@ export const InviteMembersScreen = () => {
             await apiClient.post(`/invitations/tontine/${tontineId}`, {
                 emailInvite: email.trim(),
             });
-            setInvitedList(prev => [...prev, email.trim()]);
+            Alert.alert('Succes', `Invitation envoyee a ${email.trim()} ! L'utilisateur recevra une notification.`);
             setEmail('');
-            alert(`✉️ Invitation envoyée à ${email.trim()} !`);
+            loadInvitations();
         } catch (err: any) {
             setError(err.response?.data?.message || 'Erreur lors de l\'envoi de l\'invitation.');
         } finally {
@@ -41,37 +69,72 @@ export const InviteMembersScreen = () => {
         }
     };
 
-    const handleCopy = async () => {
-        try {
-            await navigator.clipboard.writeText(joinLink);
-            setCopied(true);
-            setTimeout(() => setCopied(false), 2000);
-        } catch {
-            const textArea = document.createElement('textarea');
-            textArea.value = joinLink;
-            document.body.appendChild(textArea);
-            textArea.select();
-            document.execCommand('copy');
-            document.body.removeChild(textArea);
-            setCopied(true);
-            setTimeout(() => setCopied(false), 2000);
-        }
+    const statusConfig: Record<string, { color: string; bg: string; label: string; Icon: any }> = {
+        EN_ATTENTE: { color: '#D97706', bg: '#FEF3C7', label: 'En attente', Icon: Clock },
+        ACCEPTEE: { color: '#059669', bg: '#D1FAE5', label: 'Acceptee', Icon: CheckCircle },
+        REFUSEE: { color: '#EF4444', bg: '#FEE2E2', label: 'Refusee', Icon: XCircle },
+        EXPIREE: { color: '#6B7280', bg: '#F3F4F6', label: 'Expiree', Icon: Clock },
     };
+
+    // Vérifier si l'utilisateur est le créateur (conversion en string pour éviter les problèmes de type)
+    const isCreator = String(tontine?.creatorId) === String(currentUser?.id);
+
+    if (checkingAccess) {
+        return (
+            <View style={styles.center}>
+                <ActivityIndicator size="large" color={theme.colors.primary} />
+            </View>
+        );
+    }
+
+    if (!isCreator) {
+        return (
+            <SafeAreaView style={styles.container}>
+                <View style={styles.headerBg}>
+                    <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
+                        <ArrowLeft color="#FFFFFF" size={24} />
+                    </TouchableOpacity>
+                    <UserPlus color="#FFFFFF" size={22} />
+                    <View>
+                        <Text style={styles.headerTitle}>Inviter des membres</Text>
+                        <Text style={styles.headerSub}>{tontineName}</Text>
+                    </View>
+                </View>
+                <View style={styles.center}>
+                    <AlertCircle color="#EF4444" size={48} />
+                    <Text style={styles.accessDeniedTitle}>Accès refusé</Text>
+                    <Text style={styles.accessDeniedText}>
+                        Seul le créateur de la tontine peut inviter des membres.
+                    </Text>
+                    <Button 
+                        title="Retour" 
+                        onPress={() => navigation.goBack()} 
+                        style={{ marginTop: 20 }}
+                    />
+                </View>
+            </SafeAreaView>
+        );
+    }
 
     return (
         <SafeAreaView style={styles.container}>
-            <ScrollView contentContainerStyle={styles.scrollContent}>
-                <View style={styles.header}>
-                    <View style={styles.iconCircle}>
-                        <UserPlus color="#FFFFFF" size={28} />
-                    </View>
-                    <Text style={styles.title}>Inviter des membres</Text>
-                    <Text style={styles.subtitle}>{tontineName}</Text>
+            {/* Header */}
+            <View style={styles.headerBg}>
+                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
+                    <ArrowLeft color="#FFFFFF" size={24} />
+                </TouchableOpacity>
+                <UserPlus color="#FFFFFF" size={22} />
+                <View>
+                    <Text style={styles.headerTitle}>Inviter des membres</Text>
+                    <Text style={styles.headerSub}>{tontineName}</Text>
                 </View>
+            </View>
 
+            <ScrollView contentContainerStyle={styles.scrollContent}>
                 {/* Email invite */}
                 <View style={styles.card}>
-                    <Text style={styles.cardTitle}>📧 Inviter par email</Text>
+                    <Text style={styles.cardTitle}>Inviter par email</Text>
+                    <Text style={styles.cardDesc}>L'utilisateur recevra une notification dans l'application et pourra accepter ou refuser.</Text>
 
                     {error ? (
                         <View style={styles.errorBanner}>
@@ -86,50 +149,34 @@ export const InviteMembersScreen = () => {
                         onChangeText={(t: string) => { setEmail(t); setError(''); }}
                         keyboardType="email-address"
                         autoCapitalize="none"
-                        icon={Mail}
                     />
                     <Button title="Envoyer l'invitation" onPress={handleInvite} isLoading={isLoading} style={{ backgroundColor: '#6366F1' }} />
                 </View>
 
-                {/* Share link */}
-                <View style={styles.card}>
-                    <Text style={styles.cardTitle}>🔗 Partager le lien</Text>
-                    <Text style={styles.shareDesc}>Copiez ce lien et partagez-le via WhatsApp, SMS ou tout autre moyen.</Text>
-
-                    <View style={styles.linkBox}>
-                        <Link2 color="#6366F1" size={16} />
-                        <Text style={styles.linkText} numberOfLines={1}>{joinLink}</Text>
-                    </View>
-
-                    <TouchableOpacity style={[styles.copyBtn, copied && styles.copyBtnDone]} onPress={handleCopy} activeOpacity={0.7}>
-                        {copied ? (
-                            <>
-                                <Check color="#059669" size={16} />
-                                <Text style={styles.copyBtnTextDone}>Copié !</Text>
-                            </>
-                        ) : (
-                            <>
-                                <Copy color="#6366F1" size={16} />
-                                <Text style={styles.copyBtnText}>Copier le lien</Text>
-                            </>
-                        )}
-                    </TouchableOpacity>
-                </View>
-
-                {/* Invited list */}
-                {invitedList.length > 0 && (
+                {/* Invitations list */}
+                {invitations.length > 0 && (
                     <View style={styles.card}>
-                        <Text style={styles.cardTitle}>✅ Invitations envoyées ({invitedList.length})</Text>
-                        {invitedList.map((em, i) => (
-                            <View key={i} style={styles.invitedRow}>
-                                <CheckCircle color="#059669" size={18} />
-                                <Text style={styles.invitedEmail}>{em}</Text>
-                            </View>
-                        ))}
+                        <Text style={styles.cardTitle}>Invitations ({invitations.length})</Text>
+                        {invitations.map((inv: any, i: number) => {
+                            const cfg = statusConfig[inv.statut] || statusConfig.EN_ATTENTE;
+                            const StatusIcon = cfg.Icon;
+                            return (
+                                <View key={i} style={styles.invitedRow}>
+                                    <View style={[styles.statusIcon, { backgroundColor: cfg.bg }]}>
+                                        <StatusIcon color={cfg.color} size={16} />
+                                    </View>
+                                    <View style={{ flex: 1 }}>
+                                        <Text style={styles.invitedEmail}>{inv.emailInvite}</Text>
+                                        {inv.nom && <Text style={styles.invitedName}>{inv.prenom} {inv.nom}</Text>}
+                                    </View>
+                                    <View style={[styles.statusBadge, { backgroundColor: cfg.bg }]}>
+                                        <Text style={[styles.statusText, { color: cfg.color }]}>{cfg.label}</Text>
+                                    </View>
+                                </View>
+                            );
+                        })}
                     </View>
                 )}
-
-                <Button title="← Terminé" variant="outline" onPress={() => navigation.navigate('TontinesList')} style={{ marginTop: 12, borderColor: '#CBD5E1' }} />
             </ScrollView>
         </SafeAreaView>
     );
@@ -137,57 +184,23 @@ export const InviteMembersScreen = () => {
 
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: '#F0F2F8' },
+    center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 },
     scrollContent: { padding: 20, maxWidth: 520, width: '100%', alignSelf: 'center' },
-    header: { alignItems: 'center', marginBottom: 24 },
-    iconCircle: { width: 60, height: 60, borderRadius: 30, backgroundColor: '#6366F1', justifyContent: 'center', alignItems: 'center', marginBottom: 12 },
-    title: { fontSize: 22, fontWeight: '900', color: '#1E1B4B' },
-    subtitle: { fontSize: 14, color: '#6366F1', fontWeight: '600', marginTop: 4 },
+    headerBg: { backgroundColor: '#1E1B4B', flexDirection: 'row', alignItems: 'center', padding: 18, gap: 12 },
+    backBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.1)', justifyContent: 'center', alignItems: 'center' },
+    headerTitle: { fontSize: 18, fontWeight: '900', color: '#FFFFFF' },
+    headerSub: { fontSize: 12, color: '#A5B4FC', marginTop: 2 },
     card: { backgroundColor: '#FFFFFF', borderRadius: 16, padding: 20, boxShadow: '0px 2px 12px rgba(0,0,0,0.06)', elevation: 3, marginBottom: 16 },
-    cardTitle: { fontSize: 16, fontWeight: '700', color: '#1E1B4B', marginBottom: 12 },
-    shareDesc: { fontSize: 13, color: '#64748B', marginBottom: 12, lineHeight: 18 },
-    linkBox: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 8,
-        backgroundColor: '#F1F5F9',
-        borderRadius: 10,
-        padding: 12,
-        marginBottom: 10,
-        borderWidth: 1,
-        borderColor: '#E2E8F0',
-    },
-    linkText: {
-        flex: 1,
-        fontSize: 13,
-        color: '#475569',
-    },
-    copyBtn: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: 6,
-        paddingVertical: 10,
-        borderRadius: 10,
-        borderWidth: 1.5,
-        borderColor: '#6366F1',
-        backgroundColor: '#EEF2FF',
-    },
-    copyBtnDone: {
-        borderColor: '#059669',
-        backgroundColor: '#D1FAE5',
-    },
-    copyBtnText: {
-        color: '#6366F1',
-        fontWeight: '700',
-        fontSize: 14,
-    },
-    copyBtnTextDone: {
-        color: '#059669',
-        fontWeight: '700',
-        fontSize: 14,
-    },
+    cardTitle: { fontSize: 16, fontWeight: '700', color: '#1E1B4B', marginBottom: 4 },
+    cardDesc: { fontSize: 13, color: '#64748B', marginBottom: 12, lineHeight: 18 },
     errorBanner: { backgroundColor: '#FEF2F2', padding: 12, borderRadius: 10, marginBottom: 12, borderLeftWidth: 4, borderLeftColor: '#EF4444' },
     errorText: { color: '#EF4444', fontWeight: '600', fontSize: 14 },
-    invitedRow: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: '#F1F5F9' },
-    invitedEmail: { fontSize: 14, color: '#374151' },
+    invitedRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: '#F1F5F9' },
+    statusIcon: { width: 32, height: 32, borderRadius: 16, justifyContent: 'center', alignItems: 'center' },
+    invitedEmail: { fontSize: 14, color: '#374151', fontWeight: '600' },
+    invitedName: { fontSize: 12, color: '#64748B' },
+    statusBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20 },
+    statusText: { fontSize: 11, fontWeight: '700' },
+    accessDeniedTitle: { fontSize: 20, fontWeight: '700', color: '#1E1B4B', marginTop: 16, textAlign: 'center' },
+    accessDeniedText: { fontSize: 14, color: '#64748B', marginTop: 8, textAlign: 'center', lineHeight: 20 },
 });

@@ -4,7 +4,7 @@ import { theme } from '../../theme';
 import { useTontineStore } from '../../store/useTontineStore';
 import { TontineCard } from '../../components/ui/TontineCard';
 import { Button } from '../../components/ui/Button';
-import { Wallet, Plus, Search, TrendingUp } from 'lucide-react-native';
+import { Wallet, Plus, ArrowLeft } from 'lucide-react-native';
 import { useFocusEffect } from '@react-navigation/native';
 
 export const TontinesScreen = ({ navigation }: any) => {
@@ -25,11 +25,11 @@ export const TontinesScreen = ({ navigation }: any) => {
             <View style={styles.headerBg}>
                 <View style={styles.headerContent}>
                     <View style={styles.headerTop}>
+                        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
+                            <ArrowLeft color="#FFFFFF" size={24} />
+                        </TouchableOpacity>
                         <View>
                             <Text style={styles.headerTitle}>Mes Tontines</Text>
-                            <Text style={styles.headerSubtitle}>
-                                {tontines.length} tontine{tontines.length !== 1 ? 's' : ''} • {activeTontines} active{activeTontines !== 1 ? 's' : ''}
-                            </Text>
                         </View>
                         <TouchableOpacity
                             style={styles.addButton}
@@ -39,43 +39,9 @@ export const TontinesScreen = ({ navigation }: any) => {
                             <Plus color="#FFFFFF" size={22} />
                         </TouchableOpacity>
                     </View>
-
-                    {/* Mini stats */}
-                    <View style={styles.statsRow}>
-                        <View style={styles.statCard}>
-                            <Wallet color="#A78BFA" size={18} />
-                            <Text style={styles.statNumber}>{tontines.length}</Text>
-                            <Text style={styles.statLabel}>Total</Text>
-                        </View>
-                        <View style={styles.statCard}>
-                            <TrendingUp color="#34D399" size={18} />
-                            <Text style={styles.statNumber}>{activeTontines}</Text>
-                            <Text style={styles.statLabel}>Actives</Text>
-                        </View>
-                        <View style={styles.statCard}>
-                            <Wallet color="#FBBF24" size={18} />
-                            <Text style={styles.statNumber}>{totalCotisations > 0 ? totalCotisations.toLocaleString('fr-FR') : '0'}</Text>
-                            <Text style={styles.statLabel}>FCFA / mois</Text>
-                        </View>
-                    </View>
                 </View>
             </View>
 
-            {/* Explore card */}
-            <TouchableOpacity
-                style={styles.exploreBtn}
-                onPress={() => navigation.navigate('ExploreTontines')}
-                activeOpacity={0.7}
-            >
-                <View style={styles.exploreBtnIcon}>
-                    <Search color="#FFFFFF" size={18} />
-                </View>
-                <View style={{ flex: 1 }}>
-                    <Text style={styles.exploreBtnTitle}>Explorer les tontines ouvertes</Text>
-                    <Text style={styles.exploreBtnSub}>Découvrez et rejoignez des tontines</Text>
-                </View>
-                <Text style={{ color: '#A5B4FC', fontSize: 18 }}>›</Text>
-            </TouchableOpacity>
 
             <FlatList
                 data={tontines}
@@ -88,7 +54,7 @@ export const TontinesScreen = ({ navigation }: any) => {
                     <TontineCard
                         nom={item.nom}
                         montantCotisation={Number(item.montantCotisation)}
-                        frequence={item.frequence}
+                        intervalleJours={(item as any).intervalleJours}
                         statut={item.statut}
                         onPress={() => navigation.navigate('TontineDetails', { id: item.id })}
                     />
@@ -132,9 +98,17 @@ const styles = StyleSheet.create({
     },
     headerTop: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
         alignItems: 'center',
         marginBottom: 16,
+        gap: 12
+    },
+    backBtn: {
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        backgroundColor: 'rgba(255,255,255,0.1)',
+        justifyContent: 'center',
+        alignItems: 'center',
     },
     headerTitle: {
         fontSize: 24,

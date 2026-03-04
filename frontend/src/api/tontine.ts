@@ -4,26 +4,19 @@ export interface Tontine {
     id: string;
     nom: string;
     montantCotisation: number;
-    frequence: 'QUOTIDIENNE' | 'HEBDOMADAIRE' | 'MENSUELLE' | 'TRIMESTRIELLE';
-    dureeTotale: number;
+    intervalleJours: number;
     nbMembresAttendu: number;
     dateDebut?: string;
     dateFin?: string;
     statut: 'EN_ATTENTE' | 'ACTIVE' | 'TERMINEE' | 'ANNULEE';
-    pourcentageFrais: number;
     creatorId: string;
-    type: 'CLASSIQUE' | 'ACHAT_COMMUN';
-    statutDeblocage: 'NON_DEMANDE' | 'EN_ATTENTE' | 'VALIDE' | 'REJETE';
 }
 
 export interface CreateTontinePayload {
     nom: string;
     montantCotisation: number;
-    frequence: 'QUOTIDIENNE' | 'HEBDOMADAIRE' | 'MENSUELLE' | 'TRIMESTRIELLE';
-    dureeTotale: number;
+    intervalleJours: number;
     nbMembresAttendu: number;
-    pourcentageFrais?: number;
-    type?: 'CLASSIQUE' | 'ACHAT_COMMUN';
 }
 
 export const tontineApi = {
@@ -47,19 +40,21 @@ export const tontineApi = {
         return response.data;
     },
 
-    demanderDeblocage: async (id: string) => {
-        const response = await apiClient.post<{ success: boolean; message: string }>(`/tontines/${id}/demander-deblocage`);
+    joinTontine: async (id: string) => {
+        const response = await apiClient.post<{ success: boolean; message: string }>(`/tontines/${id}/join`);
         return response.data;
     },
 
-    validerDeblocage: async (id: string, valider: boolean) => {
-        const response = await apiClient.post<{ success: boolean; message: string }>(`/tontines/${id}/valider-deblocage`, { valider });
+    deleteTontine: async (id: string) => {
+        const response = await apiClient.delete<{ success: boolean; message: string }>(`/tontines/${id}`);
         return response.data;
     },
-
-    quitterEtRetirer: async (id: string) => {
-        const response = await apiClient.post<{ success: boolean; message: string; montantRetire: number }>(`/tontines/${id}/quitter`);
+    removeMember: async (tontineId: string, userId: string) => {
+        const response = await apiClient.delete<{ success: boolean; message: string }>(`/tontines/${tontineId}/membres/${userId}`);
         return response.data;
-    }
+    },
+    updateMembresOrdre: async (tontineId: string, ordre: { userId: string; ordre: number }[]) => {
+        const response = await apiClient.put<{ success: boolean; message: string }>(`/tontines/${tontineId}/membres/ordre`, { ordre });
+        return response.data;
+    },
 };
-

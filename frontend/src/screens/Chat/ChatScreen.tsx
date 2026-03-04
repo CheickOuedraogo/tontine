@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, FlatList, TextInput, TouchableOpacity, Keyboard
 import { theme } from '../../theme';
 import { useChatStore } from '../../store/useChatStore';
 import { useAuthStore } from '../../store/useAuthStore';
-import { Send, MessageCircle, Wifi, WifiOff, ArrowLeft } from 'lucide-react-native';
+import { Send, MessageCircle, Wifi, WifiOff, ArrowLeft, CheckCircle2 } from 'lucide-react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
 
 export const ChatScreen = () => {
@@ -51,20 +51,25 @@ export const ChatScreen = () => {
                 {!isMe && (
                     <View style={styles.avatar}>
                         <Text style={styles.avatarText}>
-                            {(item.senderName || item.senderId || '?').charAt(0).toUpperCase()}
+                            {(item.senderName || item.senderNom || '?').charAt(0).toUpperCase()}
                         </Text>
                     </View>
                 )}
-                <View style={[styles.bubble, isMe ? styles.bubbleMe : styles.bubbleOther]}>
-                    {!isMe && item.senderName && (
-                        <Text style={styles.senderName}>{item.senderName}</Text>
+                <View style={[
+                    styles.messageBubble,
+                    isMe ? styles.myMessage : styles.otherMessage
+                ]}>    {!isMe && (item.senderName || item.senderNom) && (
+                        <Text style={styles.senderName}>{item.senderName || `${item.senderPrenom} ${item.senderNom}`}</Text>
                     )}
                     <Text style={[styles.messageText, isMe && styles.messageTextMe]}>
                         {item.contenu}
                     </Text>
-                    <Text style={[styles.timeText, isMe && styles.timeTextMe]}>
-                        {new Date(item.dateEnvoi).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </Text>
+                    <View style={styles.messageFooter}>
+                        <Text style={[styles.timeText, isMe && styles.timeTextMe]}>
+                            {new Date(item.dateEnvoi).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </Text>
+                        {isMe && <CheckCircle2 size={10} color="rgba(255,255,255,0.5)" style={{ marginLeft: 4 }} />}
+                    </View>
                 </View>
             </View>
         );
@@ -283,27 +288,32 @@ const styles = StyleSheet.create({
     },
 
     // Bubbles
-    bubble: {
-        maxWidth: '70%',
-        paddingHorizontal: 12,
-        paddingVertical: 8,
-        borderRadius: 16,
+    messageBubble: {
+        maxWidth: '80%',
+        paddingHorizontal: 16,
+        paddingVertical: 10,
+        borderRadius: 20,
+        marginBottom: 4,
+        boxShadow: '0px 2px 8px rgba(0,0,0,0.06)',
+        elevation: 2,
     },
-    bubbleMe: {
+    myMessage: {
         backgroundColor: '#6366F1',
-        borderBottomRightRadius: 6,
+        borderBottomRightRadius: 4,
+        alignSelf: 'flex-end',
     },
-    bubbleOther: {
+    otherMessage: {
         backgroundColor: '#FFFFFF',
-        borderBottomLeftRadius: 6,
-        boxShadow: '0px 1px 4px rgba(0,0,0,0.06)',
-        elevation: 1,
+        borderBottomLeftRadius: 4,
+        alignSelf: 'flex-start',
+        borderWidth: 1,
+        borderColor: '#F1F5F9',
     },
     senderName: {
-        fontSize: 11,
-        fontWeight: '700',
-        color: '#6366F1',
-        marginBottom: 3,
+        fontSize: 12,
+        fontWeight: '800',
+        marginBottom: 4,
+        color: '#64748B',
     },
     messageText: {
         fontSize: 15,
@@ -320,70 +330,81 @@ const styles = StyleSheet.create({
         marginTop: 4,
     },
     timeTextMe: {
-        color: 'rgba(255,255,255,0.65)',
+        color: 'rgba(255,255,255,0.7)',
+    },
+    messageFooter: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'flex-end',
+        marginTop: 4,
     },
 
     // Empty state (inverted list so flip)
     emptyChat: {
         alignItems: 'center',
-        paddingVertical: 40,
+        paddingVertical: 60,
         transform: [{ scaleY: -1 }],
     },
     emptyChatIcon: {
-        width: 64,
-        height: 64,
-        borderRadius: 32,
-        backgroundColor: '#E0E7FF',
+        width: 80,
+        height: 80,
+        borderRadius: 40,
+        backgroundColor: '#FFFFFF',
         justifyContent: 'center',
         alignItems: 'center',
-        marginBottom: 12,
+        marginBottom: 16,
+        boxShadow: '0px 4px 15px rgba(0,0,0,0.05)',
+        elevation: 2,
     },
     emptyChatTitle: {
-        fontSize: 16,
-        fontWeight: '700',
-        color: '#475569',
-        marginBottom: 4,
+        fontSize: 18,
+        fontWeight: '800',
+        color: '#1E1B4B',
+        marginBottom: 8,
     },
     emptyChatText: {
-        fontSize: 13,
-        color: '#94A3B8',
+        fontSize: 14,
+        color: '#64748B',
         textAlign: 'center',
+        lineHeight: 20,
     },
 
     // Input bar
     inputBar: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingHorizontal: 12,
-        paddingVertical: 8,
+        paddingHorizontal: 16,
+        paddingVertical: 12,
         backgroundColor: '#FFFFFF',
         borderTopWidth: 1,
-        borderTopColor: '#E2E8F0',
-        gap: 8,
-        maxWidth: 700,
+        borderTopColor: '#F1F5F9',
+        gap: 12,
+        maxWidth: 800,
         width: '100%',
         alignSelf: 'center',
     },
     input: {
         flex: 1,
-        height: 44,
-        backgroundColor: '#F1F5F9',
-        borderRadius: 22,
-        paddingHorizontal: 16,
+        height: 48,
+        backgroundColor: '#F8FAFC',
+        borderRadius: 24,
+        paddingHorizontal: 18,
         fontSize: 15,
         color: '#1E293B',
+        borderWidth: 1,
+        borderColor: '#E2E8F0',
     },
     sendBtn: {
-        width: 44,
-        height: 44,
-        borderRadius: 22,
-        backgroundColor: '#CBD5E1',
+        width: 48,
+        height: 48,
+        borderRadius: 24,
+        backgroundColor: '#E2E8F0',
         justifyContent: 'center',
         alignItems: 'center',
     },
     sendBtnActive: {
         backgroundColor: '#6366F1',
-        boxShadow: '0px 2px 8px rgba(99,102,241,0.4)',
-        elevation: 3,
+        boxShadow: '0px 4px 12px rgba(99,102,241,0.3)',
+        elevation: 4,
     },
 });

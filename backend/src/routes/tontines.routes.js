@@ -5,21 +5,19 @@ const { isMember } = require('../middlewares/isMember.middleware');
 const { validate, schemas } = require('../middlewares/validation.middleware');
 const { 
   createTontine, getMesTontines, getTontine, getMembres, startTontine,
-  demanderDeblocage, validerDeblocage, quitterEtRetirer
+  joinTontine, deleteTontine, removeMember, updateMembresOrdre
 } = require('../controllers/tontines.controller');
 
 router.use(protect);
 
 router.post('/', validate(schemas.createTontine), createTontine);
 router.get('/me', getMesTontines);
-router.get('/:tontineId', isMember, getTontine);
+router.get('/:tontineId', getTontine);
 router.get('/:tontineId/membres', isMember, getMembres);
+router.put('/:tontineId/membres/ordre', isCreator, updateMembresOrdre);
 router.post('/:tontineId/start', isCreator, startTontine);
-
-// Routes de déblocage (Achat Commun)
-router.post('/:tontineId/demander-deblocage', isCreator, demanderDeblocage);
-router.post('/:tontineId/valider-deblocage', isMember, validerDeblocage);
-router.post('/:tontineId/quitter', isMember, quitterEtRetirer);
+router.post('/:tontineId/join', joinTontine);
+router.delete('/:tontineId/membres/:userId', isCreator, removeMember);
+router.delete('/:tontineId', isCreator, deleteTontine);
 
 module.exports = router;
-

@@ -17,6 +17,7 @@ interface ChatState {
     socket: Socket | null;
     messages: ChatMessage[];
     isConnected: boolean;
+    currentTontineId: string | null;
 
     connect: (tontineId: string) => Promise<void>;
     disconnect: () => void;
@@ -28,17 +29,21 @@ export const useChatStore = create<ChatState>((set, get) => ({
     socket: null,
     messages: [],
     isConnected: false,
+    currentTontineId: null,
 
     connect: async (tontineId: string) => {
         const token = await AsyncStorage.getItem('token');
+        const { currentTontineId, messages } = get();
 
         // Éviter les connexions multiples
         if (get().socket) {
             get().socket?.disconnect();
         }
 
-        // Reset messages for the new room
-        set({ messages: [] });
+        // Reset messages ONLY if we change room
+        if (currentTontineId !== tontineId) {
+            set({ messages: [], currentTontineId: tontineId });
+        }
 
         const socket = io(SOCKET_URL, {
             auth: { token },
@@ -46,30 +51,24 @@ export const useChatStore = create<ChatState>((set, get) => ({
         });
 
         socket.on('connect', () => {
-            console.log('[Chat] Connected to socket');
             set({ isConnected: true, socket });
-            // Rejoindre la room — backend sends chat_history automatically
             socket.emit('join_room', { tontineId });
         });
 
         // Receive chat history (sent by backend on join_room)
         socket.on('chat_history', (history: ChatMessage[]) => {
-            console.log('[Chat] History received:', history.length, 'messages');
             set({ messages: Array.isArray(history) ? history : [] });
         });
 
         socket.on('new_message', (message: ChatMessage) => {
-            console.log('[Chat] New message received:', message.contenu);
             get().addMessage(message);
         });
 
-        socket.on('connect_error', (err) => {
-            console.error('[Chat] Connection error:', err.message);
+        socket.on('connect_error', () => {
             set({ isConnected: false });
         });
 
         socket.on('disconnect', () => {
-            console.log('[Chat] Disconnected');
             set({ isConnected: false });
         });
     },

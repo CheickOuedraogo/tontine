@@ -1,5 +1,4 @@
 node_modules/
-.env
 .env.local
 .env.*
 dist/
@@ -7,3 +6,5 @@ build/
 .expo/
 *.log
 .DS_Store
+uploads/*
+*.txt

@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, ScrollView, ActivityIndicator, TouchableOpacity, Alert } from 'react-native';
+import { tontineApi } from '../../api/tontine';
 import { theme } from '../../theme';
 import { useTontineStore } from '../../store/useTontineStore';
 import { useAuthStore } from '../../store/useAuthStore';
@@ -7,8 +8,8 @@ import { useRoute, useNavigation, useFocusEffect } from '@react-navigation/nativ
 import { Button } from '../../components/ui/Button';
 import { apiClient } from '../../api/client';
 import {
-    Wallet, Users, MessageCircle, FileText, Settings, Clock,
-    ArrowLeft, CreditCard, BarChart3, UserPlus, Info
+    Wallet, Users, MessageCircle, Settings, Clock,
+    ArrowLeft, CreditCard, BarChart3, UserPlus, Trash2, Play
 } from 'lucide-react-native';
 
 export const TontineDetailsScreen = () => {
@@ -17,9 +18,8 @@ export const TontineDetailsScreen = () => {
     const { id } = route.params;
     const user = useAuthStore(state => state.user);
 
-    const { currentTontine, isLoading, fetchTontineDetails, demanderDeblocage, validerDeblocage, quitterEtRetirer } = useTontineStore();
+    const { currentTontine, isLoading, fetchTontineDetails } = useTontineStore();
     const [membresCount, setMembresCount] = useState(0);
-    const [isActionLoading, setIsActionLoading] = useState(false);
 
     const loadData = useCallback(() => {
         fetchTontineDetails(id);
@@ -31,23 +31,43 @@ export const TontineDetailsScreen = () => {
 
     useFocusEffect(loadData);
 
-    const handleDemanderDeblocage = async () => {
-        Alert.alert('Déblocage', 'Voulez-vous vraiment demander le déblocage des fonds ? Tous les membres devront valider.', [
-            { text: 'Annuler', style: 'cancel' },
-            { text: 'Confirmer', onPress: () => demanderDeblocage(id) }
-        ]);
+    const handleDelete = () => {
+        Alert.alert(
+            'Supprimer la tontine',
+            'Voulez-vous vraiment supprimer cette tontine ? Cette action est irreversible.',
+            [
+                { text: 'Annuler', style: 'cancel' },
+                { 
+                    text: 'Supprimer', 
+                    style: 'destructive',
+                    onPress: async () => {
+                        const success = await useTontineStore.getState().deleteTontine(id);
+                        if (success) {
+                            navigation.navigate('MainTabs', { screen: 'Dashboard' });
+                        }
+                    }
+                }
+            ]
+        );
     };
 
-    const handleValider = (v: boolean) => {
-        const msg = v ? 'Voulez-vous valider le déblocage ?' : 'Si vous refusez, vous devrez quitter la tontine et retirer vos fonds.';
-        Alert.alert(v ? 'Valider' : 'Refuser', msg, [
+    const handleStart = async () => {
+        if (membresCount < 2) {
+            Alert.alert('Impossible', 'Il faut au moins 2 membres pour commencer.');
+            return;
+        }
+
+        Alert.alert('Commencer', 'Voulez-vous commencer la tontine maintenant ?', [
             { text: 'Annuler', style: 'cancel' },
-            {
-                text: 'Confirmer', onPress: async () => {
-                    if (v) await validerDeblocage(id, true);
-                    else {
-                        await quitterEtRetirer(id);
-                        navigation.navigate('Tontines');
+            { 
+                text: 'Commencer', 
+                onPress: async () => {
+                    try {
+                        await tontineApi.startTontine(id);
+                        Alert.alert('Succes', 'La tontine a commence !');
+                        loadData();
+                    } catch (err: any) {
+                        Alert.alert('Erreur', err.response?.data?.message || 'Impossible de commencer.');
                     }
                 }
             }
@@ -62,11 +82,7 @@ export const TontineDetailsScreen = () => {
         );
     }
 
-    const isCreator = currentTontine.creatorId === user?.id;
-    const freqLabels: Record<string, string> = {
-        QUOTIDIENNE: 'Quotidienne', HEBDOMADAIRE: 'Hebdomadaire',
-        MENSUELLE: 'Mensuelle', TRIMESTRIELLE: 'Trimestrielle',
-    };
+    const isCreator = String(currentTontine.creatorId) === String(user?.id);
 
     return (
         <SafeAreaView style={styles.container}>
@@ -93,8 +109,8 @@ export const TontineDetailsScreen = () => {
                     </View>
                     <View style={styles.statCard}>
                         <Clock color={theme.colors.warning} size={20} />
-                        <Text style={styles.statValue}>{freqLabels[currentTontine.frequence]}</Text>
-                        <Text style={styles.statLabel}>Fréquence</Text>
+                        <Text style={styles.statValue}>Tous les {(currentTontine as any).intervalleJours || '?'} j</Text>
+                        <Text style={styles.statLabel}>Intervalle</Text>
                     </View>
                     <View style={styles.statCard}>
                         <Users color={theme.colors.success} size={20} />
@@ -103,73 +119,26 @@ export const TontineDetailsScreen = () => {
                     </View>
                 </View>
 
-                {/* Additional Details for ACHAT_COMMUN */}
-                <View style={styles.infoCard}>
-                    <View style={styles.infoRow}>
-                        <Info size={18} color="#6366F1" />
-                        <Text style={styles.infoText}>
-                            Type: <Text style={{ fontWeight: 'bold' }}>{currentTontine.type === 'ACHAT_COMMUN' ? '🛍️ Achat Commun' : '♻️ Classique'}</Text>
-                        </Text>
-                    </View>
-                    {currentTontine.type === 'ACHAT_COMMUN' && (
-                        <View style={[styles.infoRow, { marginTop: 8 }]}>
-                            <CreditCard size={18} color="#059669" />
-                            <Text style={styles.infoText}>
-                                Déblocage: <Text style={{ fontWeight: 'bold' }}>{currentTontine.statutDeblocage}</Text>
-                            </Text>
-                        </View>
-                    )}
-                </View>
-
-                {/* Unlocking Actions */}
-                {currentTontine.type === 'ACHAT_COMMUN' && (
-                    <View style={styles.actionSection}>
-                        {isCreator && currentTontine.statutDeblocage === 'NON_DEMANDE' && (
-                            <Button title="🚀 Demander le Déblocage" onPress={handleDemanderDeblocage} />
-                        )}
-                        {currentTontine.statutDeblocage === 'EN_ATTENTE' && (
-                            <View style={{ gap: 10 }}>
-                                <Text style={styles.waitingText}>💡 Le créateur demande le déblocage des fonds. Votre avis est requis.</Text>
-                                <View style={{ flexDirection: 'row', gap: 10 }}>
-                                    <Button title="✅ Valider" onPress={() => handleValider(true)} style={{ flex: 1 }} />
-                                    <Button title="❌ Refuser & Quitter" variant="danger" onPress={() => handleValider(false)} style={{ flex: 1 }} />
-                                </View>
-                            </View>
-                        )}
-                        {currentTontine.statutDeblocage === 'VALIDE' && (
-                            <View style={styles.successBox}>
-                                <Text style={styles.successText}>🎉 Déblocage validé par tous les membres !</Text>
-                            </View>
-                        )}
-                    </View>
-                )}
-
                 {/* Action Grid */}
                 <Text style={styles.sectionTitle}>Actions</Text>
                 <View style={styles.actionsGrid}>
                     <ActionCard
                         icon={<CreditCard color="#6366F1" size={24} />}
                         title="Cotisations"
-                        subtitle="Payer / voir les cycles"
+                        subtitle="Payer mes cotisations"
                         onPress={() => navigation.navigate('Cotisations', { tontineId: id })}
                     />
                     <ActionCard
                         icon={<BarChart3 color="#059669" size={24} />}
                         title="Historique"
-                        subtitle="Paiements effectués"
+                        subtitle="Paiements effectues"
                         onPress={() => navigation.navigate('PaymentHistory', { tontineId: id })}
                     />
                     <ActionCard
                         icon={<Wallet color="#D97706" size={24} />}
                         title="Distributions"
-                        subtitle="Cagnottes versées"
+                        subtitle="Cagnottes versees"
                         onPress={() => navigation.navigate('Distribution', { tontineId: id })}
-                    />
-                    <ActionCard
-                        icon={<FileText color="#64748B" size={24} />}
-                        title="Contrat"
-                        subtitle="Signer le contrat"
-                        onPress={() => navigation.navigate('Contrat', { tontineId: id })}
                     />
                     <ActionCard
                         icon={<MessageCircle color="#F59E0B" size={24} />}
@@ -187,10 +156,26 @@ export const TontineDetailsScreen = () => {
                     )}
                     {isCreator && (
                         <ActionCard
-                            icon={<Settings color="#EF4444" size={24} />}
+                            icon={<Settings color="#64748B" size={24} />}
                             title="Admin"
-                            subtitle="Gérer la tontine"
+                            subtitle="Gerer la tontine"
                             onPress={() => navigation.navigate('AdminTontine', { tontineId: id, tontineName: currentTontine.nom })}
+                        />
+                    )}
+                    {isCreator && currentTontine.statut === 'EN_ATTENTE' && (
+                        <ActionCard
+                            icon={<Trash2 color="#EF4444" size={24} />}
+                            title="Supprimer"
+                            subtitle="Annuler la tontine"
+                            onPress={handleDelete}
+                        />
+                    )}
+                    {isCreator && currentTontine.statut === 'EN_ATTENTE' && (
+                        <ActionCard
+                            icon={<Play color="#6366F1" size={24} />}
+                            title="Commencer"
+                            subtitle="Démarrer la tontine"
+                            onPress={handleStart}
                         />
                     )}
                 </View>
@@ -226,11 +211,4 @@ const styles = StyleSheet.create({
     actionCard: { width: '47%', backgroundColor: '#FFFFFF', borderRadius: 14, padding: 18, alignItems: 'center', boxShadow: '0px 2px 8px rgba(0,0,0,0.05)', elevation: 2 },
     actionTitle: { fontSize: 14, fontWeight: '700', color: '#1E1B4B', marginTop: 8 },
     actionSubtitle: { fontSize: 11, color: '#64748B', textAlign: 'center', marginTop: 2 },
-    infoCard: { backgroundColor: '#FFFFFF', borderRadius: 14, padding: 16, marginBottom: 20, borderLeftWidth: 4, borderLeftColor: '#6366F1', boxShadow: '0px 2px 8px rgba(0,0,0,0.05)', elevation: 2 },
-    infoRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-    infoText: { fontSize: 14, color: '#1E1B4B' },
-    actionSection: { backgroundColor: '#EEF2FF', borderRadius: 16, padding: 18, marginBottom: 20, borderWidth: 1, borderColor: '#C7D2FE' },
-    waitingText: { fontSize: 13, color: '#4338CA', fontWeight: '600', marginBottom: 12, lineHeight: 18 },
-    successBox: { backgroundColor: '#ECFDF5', borderRadius: 12, padding: 14, alignItems: 'center', borderWidth: 1, borderColor: '#A7F3D0' },
-    successText: { color: '#065F46', fontWeight: 'bold', fontSize: 14 },
 });

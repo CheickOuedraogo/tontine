@@ -1,31 +1,24 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { theme } from '../../theme';
-import { Wallet, Calendar, ChevronRight, Users } from 'lucide-react-native';
+import { Wallet, Clock, ChevronRight } from 'lucide-react-native';
 
 interface TontineCardProps {
     nom: string;
     montantCotisation: number;
-    frequence: string;
+    intervalleJours?: number;
     statut: string;
     onPress?: () => void;
 }
 
-const freqLabels: Record<string, string> = {
-    QUOTIDIENNE: 'Quotidienne',
-    HEBDOMADAIRE: 'Hebdomadaire',
-    MENSUELLE: 'Mensuelle',
-    TRIMESTRIELLE: 'Trimestrielle',
-};
-
 const statutLabels: Record<string, { label: string; bg: string; color: string }> = {
     ACTIVE: { label: 'Active', bg: '#D1FAE5', color: '#059669' },
     EN_ATTENTE: { label: 'En attente', bg: '#FEF3C7', color: '#D97706' },
-    TERMINEE: { label: 'Terminée', bg: '#E0E7FF', color: '#4338CA' },
-    ANNULEE: { label: 'Annulée', bg: '#FEE2E2', color: '#DC2626' },
+    TERMINEE: { label: 'Terminee', bg: '#E0E7FF', color: '#4338CA' },
+    ANNULEE: { label: 'Annulee', bg: '#FEE2E2', color: '#DC2626' },
 };
 
-export const TontineCard = ({ nom, montantCotisation, frequence, statut, onPress }: TontineCardProps) => {
+export const TontineCard = ({ nom, montantCotisation, intervalleJours, statut, onPress }: TontineCardProps) => {
     const statusInfo = statutLabels[statut] || statutLabels.EN_ATTENTE;
 
     return (
@@ -58,8 +51,8 @@ export const TontineCard = ({ nom, montantCotisation, frequence, statut, onPress
                     </View>
                     <View style={styles.separator} />
                     <View style={styles.detailItem}>
-                        <Calendar color="#8B5CF6" size={16} />
-                        <Text style={styles.detailValue}>{freqLabels[frequence] || frequence}</Text>
+                        <Clock color="#8B5CF6" size={16} />
+                        <Text style={styles.detailValue}>{intervalleJours || '?'} jours</Text>
                     </View>
                     <ChevronRight color={theme.colors.textSecondary} size={20} style={{ marginLeft: 'auto' }} />
                 </View>
@@ -78,13 +71,8 @@ const styles = StyleSheet.create({
         elevation: 4,
         overflow: 'hidden',
     },
-    accentBar: {
-        width: 5,
-    },
-    content: {
-        flex: 1,
-        padding: 16,
-    },
+    accentBar: { width: 5 },
+    content: { flex: 1, padding: 16 },
     topRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
@@ -99,33 +87,14 @@ const styles = StyleSheet.create({
         marginRight: 8,
     },
     avatarCircle: {
-        width: 38,
-        height: 38,
-        borderRadius: 19,
+        width: 38, height: 38, borderRadius: 19,
         backgroundColor: '#EEF2FF',
-        justifyContent: 'center',
-        alignItems: 'center',
+        justifyContent: 'center', alignItems: 'center',
     },
-    avatarText: {
-        fontSize: 16,
-        fontWeight: '800',
-        color: '#4338CA',
-    },
-    name: {
-        fontSize: 16,
-        fontWeight: '700',
-        color: theme.colors.text,
-    },
-    badge: {
-        paddingHorizontal: 10,
-        paddingVertical: 4,
-        borderRadius: 20,
-    },
-    badgeText: {
-        fontSize: 11,
-        fontWeight: '700',
-        letterSpacing: 0.3,
-    },
+    avatarText: { fontSize: 16, fontWeight: '800', color: '#4338CA' },
+    name: { fontSize: 16, fontWeight: '700', color: theme.colors.text },
+    badge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20 },
+    badgeText: { fontSize: 11, fontWeight: '700', letterSpacing: 0.3 },
     detailsRow: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -134,24 +103,8 @@ const styles = StyleSheet.create({
         padding: 10,
         gap: 8,
     },
-    detailItem: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 6,
-    },
-    detailValue: {
-        fontSize: 13,
-        fontWeight: '700',
-        color: theme.colors.text,
-    },
-    detailUnit: {
-        fontSize: 11,
-        fontWeight: '500',
-        color: theme.colors.textSecondary,
-    },
-    separator: {
-        width: 1,
-        height: 16,
-        backgroundColor: '#E2E8F0',
-    },
+    detailItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+    detailValue: { fontSize: 13, fontWeight: '700', color: theme.colors.text },
+    detailUnit: { fontSize: 11, fontWeight: '500', color: theme.colors.textSecondary },
+    separator: { width: 1, height: 16, backgroundColor: '#E2E8F0' },
 });

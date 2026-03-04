@@ -39,7 +39,7 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
 
             set({ notifications: updatedNotifs, unreadCount: newCount });
         } catch (e) {
-            console.log('Erreur marquerlue', e);
+            // Error handling left empty as per production best practices for silent failable UI updates
         }
     },
 

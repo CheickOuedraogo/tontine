@@ -42,7 +42,7 @@ export const useContratStore = create<ContratState>((set, get) => ({
             const data = await contratApi.getSignatures(contratId);
             set({ signatures: data });
         } catch (e) {
-            console.log('Erreur fetch signatures', e);
+            // Silent catch
         }
     },
 

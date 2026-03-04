@@ -7,7 +7,7 @@ interface CotisationState {
     error: string | null;
 
     fetchCotisations: (tontineId: string) => Promise<void>;
-    payerCotisation: (cotisationId: string) => Promise<boolean>;
+    payerCotisation: (cotisationId: string, operateur?: string) => Promise<boolean>;
 }
 
 export const useCotisationStore = create<CotisationState>((set, get) => ({
@@ -28,10 +28,10 @@ export const useCotisationStore = create<CotisationState>((set, get) => ({
         }
     },
 
-    payerCotisation: async (cotisationId: string) => {
+    payerCotisation: async (cotisationId: string, operateur?: string) => {
         set({ isLoading: true, error: null });
         try {
-            await cotisationApi.payerCotisation(cotisationId);
+            await cotisationApi.payerCotisation(cotisationId, operateur);
 
             // Update local state to reflect payment
             const updatedCotisations = get().cotisations.map(c =>

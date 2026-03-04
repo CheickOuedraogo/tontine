@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, Alert } from 'react-native';
+import React, { useState, useRef } from 'react';
+import { View, Text, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, TouchableOpacity, TextInput } from 'react-native';
 import { theme } from '../../theme';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
-import { Mail, Lock, User, Phone, UserPlus } from 'lucide-react-native';
+import { Mail, Lock, User, Phone, UserPlus, ArrowLeft } from 'lucide-react-native';
 import { apiClient } from '../../api/client';
 import { useNavigation } from '@react-navigation/native';
 
@@ -18,6 +18,13 @@ export const RegisterScreen = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
+
+    // Refs for keyboard navigation
+    const prenomRef = useRef<TextInput>(null);
+    const emailRef = useRef<TextInput>(null);
+    const telRef = useRef<TextInput>(null);
+    const passRef = useRef<TextInput>(null);
+    const confirmRef = useRef<TextInput>(null);
 
     const handleRegister = async () => {
         setError('');
@@ -41,14 +48,16 @@ export const RegisterScreen = () => {
             const response = await apiClient.post('/auth/register', {
                 nom: nom.trim(),
                 prenom: prenom.trim(),
-                email: email.trim(),
+                email: email.trim().toLowerCase(),
                 telephone: telephone.trim() || undefined,
                 motDePasse: password,
             });
 
             if (response.data.success) {
-                setSuccess('Compte créé avec succès ! Vérifiez votre email pour activer votre compte, puis connectez-vous.');
-                navigation.navigate('VerifyEmail', { email });
+                setSuccess('Compte créé avec succès ! Vous pouvez maintenant vous connecter.');
+                setTimeout(() => {
+                    navigation.navigate('Login');
+                }, 1500);
             } else {
                 setError(response.data.message || 'Erreur lors de la création du compte.');
             }
@@ -66,7 +75,13 @@ export const RegisterScreen = () => {
                 style={styles.container}
                 behavior={Platform.OS === 'ios' ? 'padding' : undefined}
             >
-                <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+                <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+                    {/* Back button */}
+                    <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
+                        <ArrowLeft color={theme.colors.text} size={24} />
+                        <Text style={styles.backText}>Retour</Text>
+                    </TouchableOpacity>
+
                     <View style={styles.header}>
                         <View style={styles.logoCircle}>
                             <UserPlus color={theme.colors.white} size={32} />
@@ -96,20 +111,28 @@ export const RegisterScreen = () => {
                                     value={nom}
                                     onChangeText={(t: string) => { setNom(t); setError(''); }}
                                     icon={User}
+                                    returnKeyType="next"
+                                    onSubmitEditing={() => prenomRef.current?.focus()}
+                                    blurOnSubmit={false}
                                 />
                             </View>
                             <View style={styles.halfInput}>
                                 <Input
+                                    ref={prenomRef}
                                     label="Prénom *"
                                     placeholder="Votre prénom"
                                     value={prenom}
                                     onChangeText={(t: string) => { setPrenom(t); setError(''); }}
                                     icon={User}
+                                    returnKeyType="next"
+                                    onSubmitEditing={() => emailRef.current?.focus()}
+                                    blurOnSubmit={false}
                                 />
                             </View>
                         </View>
 
                         <Input
+                            ref={emailRef}
                             label="Adresse Email *"
                             placeholder="votre@email.com"
                             value={email}
@@ -117,33 +140,47 @@ export const RegisterScreen = () => {
                             keyboardType="email-address"
                             autoCapitalize="none"
                             icon={Mail}
+                            returnKeyType="next"
+                            onSubmitEditing={() => telRef.current?.focus()}
+                            blurOnSubmit={false}
                         />
 
                         <Input
+                            ref={telRef}
                             label="Téléphone"
                             placeholder="+226 70 00 00 00"
                             value={telephone}
                             onChangeText={(t: string) => { setTelephone(t); setError(''); }}
                             keyboardType="phone-pad"
                             icon={Phone}
+                            returnKeyType="next"
+                            onSubmitEditing={() => passRef.current?.focus()}
+                            blurOnSubmit={false}
                         />
 
                         <Input
+                            ref={passRef}
                             label="Mot de passe *"
                             placeholder="Minimum 6 caractères"
                             value={password}
                             onChangeText={(t: string) => { setPassword(t); setError(''); }}
                             secureTextEntry
                             icon={Lock}
+                            returnKeyType="next"
+                            onSubmitEditing={() => confirmRef.current?.focus()}
+                            blurOnSubmit={false}
                         />
 
                         <Input
+                            ref={confirmRef}
                             label="Confirmer le mot de passe *"
                             placeholder="Retapez le mot de passe"
                             value={confirmPassword}
                             onChangeText={(t: string) => { setConfirmPassword(t); setError(''); }}
                             secureTextEntry
                             icon={Lock}
+                            returnKeyType="done"
+                            onSubmitEditing={handleRegister}
                         />
 
                         <Button
@@ -188,6 +225,17 @@ const styles = StyleSheet.create({
         flexGrow: 1,
         padding: theme.spacing.lg,
         justifyContent: 'center',
+    },
+    backBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: theme.spacing.md,
+        gap: 8,
+    },
+    backText: {
+        fontSize: 16,
+        color: theme.colors.text,
+        fontWeight: '600',
     },
     header: {
         alignItems: 'center',

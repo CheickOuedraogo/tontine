@@ -29,11 +29,8 @@ const schemas = {
   createTontine: Joi.object({
     nom: Joi.string().required(),
     montantCotisation: Joi.number().positive().required(),
-    frequence: Joi.string().valid('QUOTIDIENNE', 'HEBDOMADAIRE', 'MENSUELLE', 'TRIMESTRIELLE').required(),
-    dureeTotale: Joi.number().integer().positive().required(),
-    nbMembresAttendu: Joi.number().integer().positive().required(),
-    pourcentageFrais: Joi.number().min(0).max(100).optional(),
-    type: Joi.string().valid('CLASSIQUE', 'ACHAT_COMMUN').optional()
+    intervalleJours: Joi.number().integer().min(1).required(),
+    nbMembresAttendu: Joi.number().integer().positive().required()
   }),
   
   payerCotisation: Joi.object({

@@ -13,6 +13,8 @@ interface Payment {
     datePrevue: string;
     cycleNumero?: number;
     methode?: string;
+    beneficiaireNom?: string;
+    beneficiairePrenom?: string;
 }
 
 const STATUS_FR: Record<string, string> = {
@@ -109,7 +111,7 @@ export const PaymentHistoryScreen = () => {
                                             ? new Date(item.datePaiement).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })
                                             : `Prévu le ${new Date(item.datePrevue || Date.now()).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })}`
                                         }
-                                        {item.cycleNumero ? `  •  Cycle ${item.cycleNumero}` : ''}
+                                        {item.cycleNumero ? (item.beneficiairePrenom ? `  •  Tour de ${item.beneficiairePrenom} ${item.beneficiaireNom}` : `  •  Tour ${item.cycleNumero}`) : ''}
                                     </Text>
                                 </View>
                             </View>
@@ -121,7 +123,7 @@ export const PaymentHistoryScreen = () => {
                                 <Wallet color="#6366F1" size={32} />
                             </View>
                             <Text style={styles.emptyTitle}>Aucun paiement</Text>
-                            <Text style={styles.emptyText}>L'historique apparaîtra ici une fois les cycles démarrés.</Text>
+                            <Text style={styles.emptyText}>L'historique apparaîtra ici une fois la tontine démarrée.</Text>
                         </View>
                     }
                 />

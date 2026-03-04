@@ -1,139 +1,208 @@
 const asyncHandler = require('../utils/asyncHandler');
 const ApiError = require('../utils/ApiError');
-const invitationQ = require('../queries/invitation.queries');
 const tontineQ = require('../queries/tontine.queries');
 const userQ = require('../queries/user.queries');
-const { sendMail } = require('../config/mailer');
+const notifQ = require('../queries/notification.queries');
+const invitationQ = require('../queries/invitation.queries');
+const db = require('../config/db');
 
 // POST /api/invitations/tontine/:tontineId
+// Le créateur invite un membre par email → notification in-app
 const inviterMembre = asyncHandler(async (req, res) => {
   const { tontineId } = req.params;
-  const { emailInvite } = req.body;
+  let { emailInvite } = req.body;
+  
+  // Normaliser l'email
+  emailInvite = emailInvite.trim().toLowerCase();
+  
+  // Valider le format email
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(emailInvite)) {
+    throw new ApiError(400, 'Format d\'email invalide');
+  }
   
   const tontine = await tontineQ.findById(tontineId);
   if (!tontine) throw new ApiError(404, 'Tontine introuvable');
   
-  // Vérifier que la tontine n'est pas déjà pleine
+  // Vérifier que l'utilisateur est le créateur
+  if (tontine.creatorId !== req.user.id) {
+    throw new ApiError(403, 'Seul le créateur de la tontine peut inviter des membres');
+  }
+  
+  // Vérifier que la tontine est en attente
+  if (tontine.statut !== 'EN_ATTENTE') {
+    throw new ApiError(400, 'Impossible d\'inviter des membres, la tontine est déjà active');
+  }
+  
+  // Vérifier que la tontine n'est pas pleine
   const membres = await tontineQ.findMembres(tontineId);
   if (membres.length >= tontine.nbMembresAttendu) {
     throw new ApiError(400, 'La tontine a atteint le nombre maximum de membres');
   }
   
+  // Chercher l'utilisateur par email
+  const invitedUser = await userQ.findByEmail(emailInvite);
+  if (!invitedUser) {
+    throw new ApiError(404, 'Aucun utilisateur inscrit avec cet email. Il doit d\'abord créer un compte.');
+  }
+  
+  // Vérifier qu'il n'est pas déjà membre
+  const dejaMembre = membres.find(m => m.userId === invitedUser.id);
+  if (dejaMembre) {
+    throw new ApiError(400, 'Cet utilisateur est déjà membre de la tontine');
+  }
+  
+  // Vérifier qu'il n'y a pas déjà une invitation en attente
+  const { rows: existingInvitations } = await db.query(
+    `SELECT id FROM "Invitation" WHERE "tontineId"=$1 AND "emailInvite"=$2 AND statut='EN_ATTENTE'`,
+    [tontineId, emailInvite]
+  );
+  
+  if (existingInvitations.length > 0) {
+    throw new ApiError(400, 'Une invitation est déjà en attente pour cet utilisateur');
+  }
+  
+  // Créer l'invitation en BDD
   const dateExpiration = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
   const invitation = await invitationQ.create({ tontineId, emailInvite, dateExpiration });
   
-  const lien = `${process.env.FRONTEND_URL}/invitation/${invitation.token}`;
+  // Envoyer une notification in-app à l'utilisateur invité
+  const creator = await userQ.findById(req.user.id);
+  await notifQ.create({
+    userId: invitedUser.id,
+    type: 'INVITATION_TONTINE',
+    titre: 'Invitation à une tontine',
+    contenu: `${creator.prenom} ${creator.nom} vous invite à rejoindre la tontine "${tontine.nom}" (${Number(tontine.montantCotisation).toLocaleString('fr-FR')} FCFA tous les ${tontine.intervalleJours} jours).`,
+    lienAction: `/invitations/${invitation.id}/repondre`
+  });
   
-  const htmlEmail = `
-    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-      <h2 style="color: #4CAF50;">Invitation à rejoindre une tontine</h2>
-      <p>Bonjour,</p>
-      <p>Vous avez été invité(e) à rejoindre la tontine <strong>${tontine.nom}</strong>.</p>
-      
-      <div style="background: #f5f5f5; padding: 20px; border-radius: 5px; margin: 20px 0;">
-        <h3>Détails de la tontine:</h3>
-        <ul>
-          <li><strong>Montant:</strong> ${tontine.montantCotisation} FCFA</li>
-          <li><strong>Fréquence:</strong> ${tontine.frequence}</li>
-          <li><strong>Durée:</strong> ${tontine.dureeTotale} cycles</li>
-          <li><strong>Membres:</strong> ${membres.length}/${tontine.nbMembresAttendu}</li>
-        </ul>
-      </div>
-      
-      <p><strong>Pour accepter cette invitation:</strong></p>
-      <ol>
-        <li>Cliquez sur le lien ci-dessous</li>
-        <li>Inscrivez-vous sur la plateforme (si ce n'est pas déjà fait)</li>
-        <li>Téléchargez votre pièce d'identité (CNIB)</li>
-        <li>Attendez la validation du créateur</li>
-      </ol>
-      
-      <div style="text-align: center; margin: 30px 0;">
-        <a href="${lien}" style="background: #4CAF50; color: white; padding: 15px 30px; text-decoration: none; border-radius: 5px; display: inline-block;">
-          Accepter l'invitation
-        </a>
-      </div>
-      
-      <p style="color: #666; font-size: 12px;">
-        Cette invitation expire le ${new Date(dateExpiration).toLocaleDateString('fr-FR')}
-      </p>
-    </div>
-  `;
-  
-  await sendMail(emailInvite, `Invitation à rejoindre ${tontine.nom}`, htmlEmail);
-  
-  res.status(201).json({ success: true, invitation });
+  res.status(201).json({ 
+    success: true, 
+    message: 'Invitation envoyée avec succès', 
+    invitation 
+  });
 });
 
-// GET /api/invitations/:token
-const getInvitationDetails = asyncHandler(async (req, res) => {
-  const { token } = req.params;
-  const invitation = await invitationQ.findByToken(token);
+// GET /api/invitations/tontine/:tontineId
+// Liste des invitations d'une tontine
+const getInvitationsByTontine = asyncHandler(async (req, res) => {
+  const { tontineId } = req.params;
+  const invitations = await invitationQ.findByTontine(tontineId);
+  res.json({ success: true, invitations });
+});
+
+// POST /api/invitations/:invitationId/accepter
+// L'invité accepte l'invitation
+const accepterInvitation = asyncHandler(async (req, res) => {
+  const { invitationId } = req.params;
+  const invitation = await invitationQ.findById(invitationId);
   
   if (!invitation) throw new ApiError(404, 'Invitation introuvable');
-  if (new Date() > new Date(invitation.dateExpiration)) {
-    throw new ApiError(400, 'Invitation expirée');
+  if (invitation.statut !== 'EN_ATTENTE') {
+    throw new ApiError(400, 'Cette invitation a déjà été traitée');
   }
   
-  const tontine = await tontineQ.findById(invitation.tontineId);
-  const membres = await tontineQ.findMembres(invitation.tontineId);
+  // Vérifier l'expiration
+  if (new Date() > new Date(invitation.dateExpiration)) {
+    await invitationQ.updateStatut(invitation.id, 'EXPIREE');
+    throw new ApiError(400, 'Cette invitation a expiré');
+  }
   
-  res.json({
-    success: true,
-    invitation: {
-      ...invitation,
-      tontine: {
-        nom: tontine.nom,
-        montantCotisation: tontine.montantCotisation,
-        frequence: tontine.frequence,
-        dureeTotale: tontine.dureeTotale,
-        nbMembresActuels: membres.length,
-        nbMembresAttendu: tontine.nbMembresAttendu
-      }
+  // Vérifier que c'est bien l'utilisateur invité
+  const user = await userQ.findById(req.user.id);
+  if (user.email.toLowerCase() !== invitation.emailInvite.toLowerCase()) {
+    throw new ApiError(403, 'Cette invitation n\'est pas pour vous');
+  }
+  
+  // Vérifier que la tontine est toujours en attente
+  const tontine = await tontineQ.findById(invitation.tontineId);
+  if (tontine.statut !== 'EN_ATTENTE') {
+    throw new ApiError(400, 'Cette tontine a déjà démarré, impossible de la rejoindre');
+  }
+  
+  // Vérifier la capacité
+  const membres = await tontineQ.findMembres(invitation.tontineId);
+  const dejaMembre = membres.find(m => m.userId === user.id);
+  
+  if (dejaMembre) {
+    // Déjà membre, juste marquer l'invitation comme acceptée
+    await invitationQ.updateStatut(invitation.id, 'ACCEPTEE');
+    return res.json({ success: true, message: 'Vous êtes déjà membre de cette tontine' });
+  }
+  
+  if (membres.length >= tontine.nbMembresAttendu) {
+    throw new ApiError(400, 'La tontine est déjà complète');
+  }
+  
+  // Ajouter le membre
+  await tontineQ.addMembre({ userId: user.id, tontineId: invitation.tontineId });
+  
+  // Marquer comme acceptée
+  await invitationQ.updateStatut(invitation.id, 'ACCEPTEE');
+  
+  // Notifier le créateur
+  await notifQ.create({
+    userId: tontine.creatorId,
+    type: 'INVITATION_ACCEPTEE',
+    titre: 'Invitation acceptée',
+    contenu: `${user.prenom} ${user.nom} a accepté de rejoindre la tontine "${tontine.nom}". (${membres.length + 1}/${tontine.nbMembresAttendu} membres)`,
+    lienAction: `/tontines/${tontine.id}`
+  });
+  
+  res.json({ 
+    success: true, 
+    message: 'Vous avez rejoint la tontine avec succès',
+    tontine: {
+      id: tontine.id,
+      nom: tontine.nom,
+      nbMembres: membres.length + 1,
+      nbMembresAttendu: tontine.nbMembresAttendu
     }
   });
 });
 
-// POST /api/invitations/:token/accepter
-// L'utilisateur doit être connecté et avoir uploadé sa CNIB
-const accepterInvitation = asyncHandler(async (req, res) => {
-  const { token } = req.params;
-  const invitation = await invitationQ.findByToken(token);
+// POST /api/invitations/:invitationId/refuser
+// L'invité refuse l'invitation
+const refuserInvitation = asyncHandler(async (req, res) => {
+  const { invitationId } = req.params;
+  const invitation = await invitationQ.findById(invitationId);
   
   if (!invitation) throw new ApiError(404, 'Invitation introuvable');
-  if (invitation.statut !== 'EN_ATTENTE') throw new ApiError(400, 'Invitation déjà traitée');
-  if (new Date() > new Date(invitation.dateExpiration)) throw new ApiError(400, 'Invitation expirée');
+  if (invitation.statut !== 'EN_ATTENTE') throw new ApiError(400, 'Invitation deja traitee');
   
-  // Vérifier que l'email de l'utilisateur connecté correspond à l'invitation
   const user = await userQ.findById(req.user.id);
   if (user.email !== invitation.emailInvite) {
     throw new ApiError(403, 'Cette invitation n\'est pas pour vous');
   }
   
-  // Vérifier que l'utilisateur a uploadé sa CNIB
-  if (!user.urlCnib) {
-    throw new ApiError(400, 'Vous devez d\'abord uploader votre pièce d\'identité (CNIB)');
-  }
-  
-  // Ajouter l'utilisateur à la tontine avec statut EN_ATTENTE pour vérification
-  await tontineQ.addMembre({ userId: user.id, tontineId: invitation.tontineId });
-  await invitationQ.updateStatut(invitation.id, 'ACCEPTEE');
+  await invitationQ.updateStatut(invitation.id, 'REFUSEE');
   
   // Notifier le créateur
   const tontine = await tontineQ.findById(invitation.tontineId);
-  const notifQ = require('../queries/notification.queries');
   await notifQ.create({
     userId: tontine.creatorId,
-    type: 'NOUVELLE_DEMANDE_ADHESION',
-    titre: 'Nouvelle demande d\'adhésion',
-    contenu: `${user.prenom} ${user.nom} souhaite rejoindre ${tontine.nom}. Vérifiez son identité.`,
-    lienAction: `/tontines/${tontine.id}/verifications`
+    type: 'INVITATION_REFUSEE',
+    titre: 'Invitation refusee',
+    contenu: `${user.prenom} ${user.nom} a refuse de rejoindre la tontine "${tontine.nom}".`,
+    lienAction: `/tontines/${tontine.id}`
   });
   
-  res.json({
-    success: true,
-    message: 'Demande envoyée. En attente de validation du créateur.'
-  });
+  res.json({ success: true, message: 'Invitation refusee' });
 });
 
-module.exports = { inviterMembre, getInvitationDetails, accepterInvitation };
+// GET /api/invitations/me
+// Liste des invitations reçues par l'utilisateur connecté
+const getMesInvitations = asyncHandler(async (req, res) => {
+  let email = req.user.email;
+  
+  // Fallback au cas où le token ne contient pas l'email (ancien token)
+  if (!email) {
+    const user = await userQ.findById(req.user.id);
+    email = user?.email;
+  }
+
+  const invitations = await invitationQ.findPendingByUser(email);
+  res.json({ success: true, invitations });
+});
+
+module.exports = { inviterMembre, getInvitationsByTontine, accepterInvitation, refuserInvitation, getMesInvitations };

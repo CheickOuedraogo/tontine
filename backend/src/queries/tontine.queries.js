@@ -16,12 +16,34 @@ const findByMembre = async (userId) => {
   return rows;
 };
 
-// create(data: {nom, montantCotisation, frequence, dureeTotale, nbMembresAttendu, pourcentageFrais, creatorId, type}) => Promise<Tontine>
+// create(data) => Promise<Tontine>
 const create = async (data) => {
+  const nbMembres = parseInt(data.nbMembresAttendu) || 2;
+  const montant = parseFloat(data.montantCotisation) || 0;
+  const intervalle = parseInt(data.intervalleJours) || 30;
+
   const { rows } = await db.query(
-    `INSERT INTO "Tontine" (nom, "montantCotisation", frequence, "dureeTotale", "nbMembresAttendu", "pourcentageFrais", "creatorId", "type")
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *`,
-    [data.nom, data.montantCotisation, data.frequence, data.dureeTotale, data.nbMembresAttendu, data.pourcentageFrais, data.creatorId, data.type || 'CLASSIQUE']
+    `INSERT INTO "Tontine" (
+      nom, 
+      "montantCotisation", 
+      "intervalleJours", 
+      "nbMembresAttendu", 
+      "dureeTotale", 
+      "creatorId", 
+      frequence,
+      statut
+    )
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
+    [
+      data.nom, 
+      montant, 
+      intervalle, 
+      nbMembres, 
+      nbMembres, // dureeTotale = nombre de membres (chacun reçoit une fois)
+      data.creatorId, 
+      'MENSUELLE',
+      'EN_ATTENTE'
+    ]
   );
   return rows[0];
 };
@@ -30,14 +52,6 @@ const create = async (data) => {
 const updateStatut = async (id, statut) => {
   const { rows } = await db.query(
     `UPDATE "Tontine" SET statut=$1 WHERE id=$2 RETURNING *`, [statut, id]
-  );
-  return rows[0];
-};
-
-// updateDeblocage(id: string, statut: string) => Promise<Tontine>
-const updateDeblocage = async (id, statut) => {
-  const { rows } = await db.query(
-    `UPDATE "Tontine" SET "statutDeblocage"=$1 WHERE id=$2 RETURNING *`, [statut, id]
   );
   return rows[0];
 };
@@ -66,22 +80,48 @@ const removeMembre = async (tontineId, userId) => {
   await db.query(`DELETE FROM "Participation" WHERE "tontineId"=$1 AND "userId"=$2`, [tontineId, userId]);
 };
 
-// validerDeblocage(tontineId: string, userId: string, valider: boolean) => Promise<void>
-const validerDeblocage = async (tontineId, userId, valider) => {
-  await db.query(`UPDATE "Participation" SET "aValideDeblocage"=$1 WHERE "tontineId"=$2 AND "userId"=$3`, [valider, tontineId, userId]);
+// deleteTontine(id: string) => Promise<void>
+const deleteTontine = async (id) => {
+  const client = await db.getClient();
+  try {
+    await client.query('BEGIN');
+    await client.query(`DELETE FROM "Message" WHERE "tontineId"=$1`, [id]);
+    await client.query(`DELETE FROM "Cotisation" WHERE "tontineId"=$1`, [id]);
+    await client.query(`DELETE FROM "Distribution" WHERE "tontineId"=$1`, [id]);
+    await client.query(`DELETE FROM "Contrat" WHERE "tontineId"=$1`, [id]);
+    await client.query(`DELETE FROM "Invitation" WHERE "tontineId"=$1`, [id]);
+    await client.query(`DELETE FROM "Participation" WHERE "tontineId"=$1`, [id]);
+    await client.query(`DELETE FROM "Tontine" WHERE id=$1`, [id]);
+    await client.query('COMMIT');
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
 };
 
-// allSignedContrat(tontineId: string) => Promise<boolean>
-const allSignedContrat = async (tontineId) => {
-  const { rows } = await db.query(
-    `SELECT COUNT(*) FILTER (WHERE "aSigneContrat"=false) AS unsigned
-     FROM "Participation" WHERE "tontineId"=$1`, [tontineId]
-  );
-  return parseInt(rows[0].unsigned) === 0;
+// updateOrdreDistribution(tontineId: string, ordre: {userId: string, ordre: number}[]) => Promise<void>
+const updateOrdreDistribution = async (tontineId, ordre) => {
+  const client = await db.getClient();
+  try {
+    await client.query('BEGIN');
+    for (const item of ordre) {
+      await client.query(
+        `UPDATE "Participation" SET "ordreDistribution"=$1 WHERE "userId"=$2 AND "tontineId"=$3`,
+        [item.ordre, item.userId, tontineId]
+      );
+    }
+    await client.query('COMMIT');
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
 };
 
 module.exports = {
-  findById, findByMembre, create, updateStatut, updateDeblocage, 
-  findMembres, addMembre, removeMembre, validerDeblocage, allSignedContrat 
+  findById, findByMembre, create, updateStatut,
+  findMembres, addMembre, removeMembre, deleteTontine, updateOrdreDistribution
 };
-

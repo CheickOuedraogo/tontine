@@ -19,7 +19,7 @@ Article 2 — Cotisation
 Chaque membre s'engage à verser la somme de ${Number(tontine?.montantCotisation || 0).toLocaleString('fr-FR')} FCFA selon la fréquence ${(tontine?.frequence || 'MENSUELLE').toLowerCase()} convenue.
 
 Article 3 — Durée
-La tontine se déroule sur ${tontine?.dureeTotale || 'N/A'} cycles. Chaque membre s'engage à participer pour la durée totale.
+La tontine se déroule sur ${tontine?.dureeTotale || 'N/A'} tours. Chaque membre s'engage à participer pour la durée totale.
 
 Article 4 — Membres
 Le nombre de membres attendus est de ${tontine?.nbMembresAttendu || 'N/A'} personnes. La tontine ne pourra démarrer qu'une fois ce nombre atteint et que tous les membres auront signé le présent contrat.

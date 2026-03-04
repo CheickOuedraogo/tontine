@@ -88,7 +88,7 @@ export const JoinTontineScreen = () => {
                     <View style={styles.statsGrid}>
                         <StatItem icon={<Wallet color={theme.colors.primary} size={22} />} label="Cotisation" value={`${Number(tontine.montantCotisation).toLocaleString('fr-FR')} FCFA`} />
                         <StatItem icon={<Calendar color={theme.colors.warning} size={22} />} label="Fréquence" value={freqLabels[tontine.frequence] || tontine.frequence} />
-                        <StatItem icon={<Calendar color={theme.colors.textSecondary} size={22} />} label="Durée" value={`${tontine.dureeTotale} cycles`} />
+                        <StatItem icon={<Calendar color={theme.colors.textSecondary} size={22} />} label="Durée" value={`${tontine.dureeTotale} tours`} />
                         <StatItem icon={<Users color={theme.colors.success} size={22} />} label="Places" value={`${tontine.nbMembresAttendu} membres`} />
                     </View>
 

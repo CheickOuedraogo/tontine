@@ -18,9 +18,9 @@ export const cotisationApi = {
         return response.data.cotisations;
     },
 
-    payerCotisation: async (cotisationId: string, simulationRef: string = `SIM-${Date.now()}`) => {
-        const response = await apiClient.post<{ success: boolean; cotisation: Cotisation }>(`/cotisations/${cotisationId}/payer`, {
-            simulationRef
+    payerCotisation: async (cotisationId: string, operateur?: string) => {
+        const response = await apiClient.post<{ success: boolean; cotisation: Cotisation }>(`/cotisations/${cotisationId}/simuler-paiement`, {
+            operateur: operateur || 'ORANGE_MONEY'
         });
         return response.data;
     }

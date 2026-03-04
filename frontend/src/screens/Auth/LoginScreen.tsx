@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, Alert } from 'react-native';
+import React, { useState, useRef } from 'react';
+import { View, Text, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, TextInput } from 'react-native';
 import { theme } from '../../theme';
 import { useAuthStore } from '../../store/useAuthStore';
 import { Button } from '../../components/ui/Button';
@@ -15,6 +15,7 @@ export const LoginScreen = () => {
     const [password, setPassword] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
+    const passwordRef = useRef<TextInput>(null);
 
     const handleLogin = async () => {
         if (!email.trim() || !password.trim()) {
@@ -25,7 +26,7 @@ export const LoginScreen = () => {
         setIsLoading(true);
         try {
             const response = await apiClient.post('/auth/login', {
-                email: email.trim(),
+                email: email.trim().toLowerCase(),
                 motDePasse: password,
             });
 
@@ -38,9 +39,6 @@ export const LoginScreen = () => {
         } catch (err: any) {
             const msg = err.response?.data?.message || 'Erreur de connexion au serveur.';
             setError(msg);
-            if (err.response?.status === 403) {
-                navigation.navigate('VerifyEmail', { email: email.trim() });
-            }
         } finally {
             setIsLoading(false);
         }
@@ -52,7 +50,7 @@ export const LoginScreen = () => {
                 style={styles.container}
                 behavior={Platform.OS === 'ios' ? 'padding' : undefined}
             >
-                <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+                <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
                     {/* Logo / Brand */}
                     <View style={styles.header}>
                         <View style={styles.logoCircle}>
@@ -81,15 +79,21 @@ export const LoginScreen = () => {
                             keyboardType="email-address"
                             autoCapitalize="none"
                             icon={Mail}
+                            returnKeyType="next"
+                            onSubmitEditing={() => passwordRef.current?.focus()}
+                            blurOnSubmit={false}
                         />
 
                         <Input
+                            ref={passwordRef}
                             label="Mot de passe"
                             placeholder="••••••••"
                             value={password}
                             onChangeText={(text: string) => { setPassword(text); setError(''); }}
                             secureTextEntry
                             icon={Lock}
+                            returnKeyType="done"
+                            onSubmitEditing={handleLogin}
                         />
 
                         <Button

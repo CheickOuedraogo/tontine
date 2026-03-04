@@ -40,4 +40,16 @@ const uploadCnib = asyncHandler(async (req, res) => {
   res.json({ success: true, user });
 });
 
-module.exports = { getProfile, updateProfile, changePassword, uploadCnib };
+// POST /api/users/me/photo
+const uploadPhoto = asyncHandler(async (req, res) => {
+  if (!req.file) throw new ApiError(400, 'Fichier photo manquant');
+
+  // Stocker l'URL publique
+  // On utilise le chemin relatif qui sera servi par express.static
+  const photoUrl = `/public/uploads/${req.file.filename}`;
+  const user = await userQ.updatePhoto(req.user.id, photoUrl);
+  
+  res.json({ success: true, data: user });
+});
+
+module.exports = { getProfile, updateProfile, changePassword, uploadCnib, uploadPhoto };

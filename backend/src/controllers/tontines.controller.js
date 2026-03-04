@@ -3,23 +3,20 @@ const ApiError = require('../utils/ApiError');
 const tontineQ = require('../queries/tontine.queries');
 const cotisationQ = require('../queries/cotisation.queries');
 const distributionQ = require('../queries/distribution.queries');
-const contratQ = require('../queries/contrat.queries');
 const notifQ = require('../queries/notification.queries');
 const db = require('../config/db');
-const { calculerMontantNet, calculerDatesCycles, genererOrdreAleatoire } = require('../utils/helpers');
-
+const { calculerDatesCycles, genererOrdreAleatoire } = require('../utils/helpers');
 
 // POST /api/tontines
 const createTontine = asyncHandler(async (req, res) => {
-  const { nom, montantCotisation, frequence, dureeTotale, nbMembresAttendu, pourcentageFrais, type } = req.body;
+  const { nom, montantCotisation, intervalleJours, nbMembresAttendu } = req.body;
   const tontine = await tontineQ.create({
-    nom, montantCotisation, frequence, dureeTotale, nbMembresAttendu,
-    pourcentageFrais: pourcentageFrais || 0,
-    creatorId: req.user.id,
-    type: type || 'CLASSIQUE'
+    nom, montantCotisation, intervalleJours, nbMembresAttendu,
+    creatorId: req.user.id
   });
   
   await tontineQ.addMembre({ userId: req.user.id, tontineId: tontine.id });
+
   res.status(201).json({ success: true, tontine });
 });
 
@@ -46,130 +43,192 @@ const getMembres = asyncHandler(async (req, res) => {
 const startTontine = asyncHandler(async (req, res) => {
   const { tontineId } = req.params;
   const tontine = await tontineQ.findById(tontineId);
+  
   if (!tontine) throw new ApiError(404, 'Tontine introuvable');
-  if (tontine.statut !== 'EN_ATTENTE') throw new ApiError(400, 'Tontine deja demarree');
+  
+  // Vérifier que l'utilisateur est le créateur
+  if (tontine.creatorId !== req.user.id) {
+    throw new ApiError(403, 'Seul le créateur de la tontine peut la démarrer');
+  }
+  
+  if (tontine.statut !== 'EN_ATTENTE') {
+    throw new ApiError(400, `Cette tontine est déjà ${tontine.statut === 'ACTIVE' ? 'active' : 'terminée'}`);
+  }
   
   const membres = await tontineQ.findMembres(tontineId);
-  // Pour ACHAT_COMMUN, le nombre de membres peut être flexible ou validé différemment.
-  // Pour CLASSIQUE, on garde la contrainte stricte.
-  if (tontine.type === 'CLASSIQUE' && membres.length !== tontine.nbMembresAttendu) {
-     throw new ApiError(400, 'Nombre de membres insuffisant pour une tontine classique');
+  if (membres.length < 2) {
+    throw new ApiError(400, 'Il faut au moins 2 membres pour démarrer une tontine');
   }
   
-  const allSigned = await tontineQ.allSignedContrat(tontineId);
-  if (!allSigned) throw new ApiError(400, 'Tous les membres doivent signer le contrat');
+  // Vérifier que tous les membres ont signé le contrat (si un contrat existe)
+  const { rows: contrats } = await db.query(
+    `SELECT id FROM "Contrat" WHERE "tontineId"=$1`, [tontineId]
+  );
   
-  // Ordre de distribution (utile surtout pour CLASSIQUE)
-  const ordre = genererOrdreAleatoire(membres.map(m => m.userId));
-  for (let i = 0; i < ordre.length; i++) {
-    await db.query(`UPDATE "Participation" SET "ordreDistribution"=$1 WHERE "userId"=$2 AND "tontineId"=$3`, [i + 1, ordre[i], tontineId]);
+  if (contrats.length > 0) {
+    const membresNonSignes = membres.filter(m => !m.aSigneContrat);
+    if (membresNonSignes.length > 0) {
+      throw new ApiError(400, `${membresNonSignes.length} membre(s) n'ont pas encore signé le contrat`);
+    }
   }
   
-  const dateDebut = new Date(req.body.dateDebut || Date.now());
-  const datesCycles = calculerDatesCycles(dateDebut, tontine.frequence, tontine.dureeTotale);
+  // Vérifier si un ordre manuel a été défini
+  const hasManualOrder = membres.every(m => m.ordreDistribution !== null && m.ordreDistribution !== undefined);
+  
+  if (!hasManualOrder) {
+    // Générer l'ordre de distribution aléatoire seulement si pas d'ordre manuel
+    const ordre = genererOrdreAleatoire(membres.map(m => m.userId));
+    for (let i = 0; i < ordre.length; i++) {
+      await db.query(
+        `UPDATE "Participation" SET "ordreDistribution"=$1 WHERE "userId"=$2 AND "tontineId"=$3`, 
+        [i + 1, ordre[i], tontineId]
+      );
+    }
+  }
+  
+  // Récupérer les membres avec leur ordre mis à jour
+  const updatedMembres = await tontineQ.findMembres(tontineId);
+  
+  // Utiliser la date actuelle par défaut
+  const dateDebut = new Date();
+  const realNbMembres = updatedMembres.length;
+  const dureeTotale = realNbMembres; // Chaque membre reçoit exactement une fois
+  
+  // Mettre à jour la tontine avec les vraies valeurs
+  await db.query(
+    `UPDATE "Tontine" SET "dureeTotale"=$1, "nbMembresAttendu"=$2, "dateDebut"=$3, statut='ACTIVE' WHERE id=$4`,
+    [dureeTotale, realNbMembres, dateDebut, tontineId]
+  );
+
+  const datesCycles = calculerDatesCycles(dateDebut, tontine.intervalleJours, dureeTotale);
   
   const cotisations = [];
-  for (let cycle = 0; cycle < tontine.dureeTotale; cycle++) {
-    for (const m of membres) {
+  const distributions = [];
+
+  // Trier les membres par ordre de distribution
+  const membresTries = [...updatedMembres].sort((a, b) => a.ordreDistribution - b.ordreDistribution);
+
+  // Générer les cotisations et distributions pour tous les cycles
+  for (let turn = 0; turn < dureeTotale; turn++) {
+    // Chaque membre paie à chaque tour
+    for (const m of updatedMembres) {
       cotisations.push({
         participationId: m.id,
         tontineId,
         montant: tontine.montantCotisation,
-        datePrevue: datesCycles[cycle],
-        cycleNumero: cycle + 1
+        datePrevue: datesCycles[turn],
+        cycleNumero: turn + 1
       });
     }
+
+    // Un seul bénéficiaire par tour (selon l'ordre trié)
+    const benefIndex = turn % membresTries.length;
+    const beneficiaire = membresTries[benefIndex];
+    
+    const montantBrut = tontine.montantCotisation * updatedMembres.length;
+    
+    distributions.push({
+      tontineId,
+      beneficiaireId: beneficiaire.userId,
+      montantBrut,
+      montantFrais: 0,
+      montantNet: montantBrut,
+      datePrevue: datesCycles[turn],
+      cycleNumero: turn + 1,
+      statut: 'PLANIFIEE'
+    });
   }
+
+  // Insérer en masse
   await cotisationQ.createBulk(cotisations);
+  await distributionQ.createBulk(distributions);
   
-  await tontineQ.updateStatut(tontineId, 'ACTIVE');
-  
-  for (const m of membres) {
+  // Notifier tous les membres
+  for (const m of updatedMembres) {
     await notifQ.create({
       userId: m.userId,
       type: 'TONTINE_DEMARREE',
-      titre: 'Tontine demarree',
-      contenu: `La tontine ${tontine.nom} a demarre`,
+      titre: 'Tontine démarrée',
+      contenu: `La tontine "${tontine.nom}" a démarré ! Vous êtes en position ${m.ordreDistribution} pour recevoir votre distribution.`,
       lienAction: `/tontines/${tontineId}`
     });
   }
   
-  res.json({ success: true, message: 'Tontine demarree' });
+  res.json({ 
+    success: true, 
+    message: 'Tontine démarrée avec succès',
+    tontine: {
+      id: tontineId,
+      nbMembres: realNbMembres,
+      dureeTotale,
+      dateDebut
+    }
+  });
 });
 
-
-// POST /api/tontines/:tontineId/demander-deblocage
-const demanderDeblocage = asyncHandler(async (req, res) => {
+// POST /api/tontines/:tontineId/join
+const joinTontine = asyncHandler(async (req, res) => {
   const { tontineId } = req.params;
   const tontine = await tontineQ.findById(tontineId);
   if (!tontine) throw new ApiError(404, 'Tontine introuvable');
-  if (tontine.creatorId !== req.user.id) throw new ApiError(403, 'Seul le créateur peut demander le déblocage');
-  
-  await tontineQ.updateDeblocage(tontineId, 'EN_ATTENTE');
-  
-  // Notifier tous les membres
-  const membres = await tontineQ.findMembres(tontineId);
-  for (const m of membres) {
-    await notifQ.create({
-      userId: m.userId,
-      type: 'DEBLOCAGE_DEMANDE',
-      titre: 'Demande de déblocage',
-      contenu: `Le créateur de la tontine ${tontine.nom} demande le déblocage des fonds. Votre validation est requise.`,
-      lienAction: `/tontines/${tontineId}`
-    });
-  }
-  
-  res.json({ success: true, message: 'Demande de déblocage envoyée' });
-});
-
-// POST /api/tontines/:tontineId/valider-deblocage
-const validerDeblocage = asyncHandler(async (req, res) => {
-  const { tontineId } = req.params;
-  const { valider } = req.body; // boolean
-  
-  await tontineQ.validerDeblocage(tontineId, req.user.id, valider);
+  if (tontine.statut !== 'EN_ATTENTE') throw new ApiError(400, 'Cette tontine n\'accepte plus de membres');
   
   const membres = await tontineQ.findMembres(tontineId);
-  const totalMembres = membres.length;
-  const nbValides = membres.filter(m => m.aValideDeblocage).length;
+  if (membres.length >= tontine.nbMembresAttendu) throw new ApiError(400, 'La tontine est complete');
   
-  if (nbValides === totalMembres) {
-    await tontineQ.updateDeblocage(tontineId, 'VALIDE');
-    // Notifier le créateur
-    const tontine = await tontineQ.findById(tontineId);
-    await notifQ.create({
-      userId: tontine.creatorId,
-      type: 'DEBLOCAGE_VALIDE',
-      titre: 'Déblocage validé',
-      contenu: `Tous les membres ont validé le déblocage de la tontine ${tontine.nom}.`,
-      lienAction: `/tontines/${tontineId}`
-    });
-  }
+  const dejaMembreCheck = membres.find(m => m.userId === req.user.id);
+  if (dejaMembreCheck) throw new ApiError(400, 'Vous etes deja membre de cette tontine');
   
-  res.json({ success: true, message: 'Vote enregistré', nbValides, totalMembres });
+  await tontineQ.addMembre({ userId: req.user.id, tontineId });
+  
+  res.json({ success: true, message: 'Vous avez rejoint la tontine' });
 });
 
-// POST /api/tontines/:tontineId/quitter
-const quitterEtRetirer = asyncHandler(async (req, res) => {
+// DELETE /api/tontines/:tontineId
+const deleteTontine = asyncHandler(async (req, res) => {
   const { tontineId } = req.params;
-  const user = await db.query('SELECT * FROM "Participation" WHERE "tontineId"=$1 AND "userId"=$2', [tontineId, req.user.id]);
-  if (user.rows.length === 0) throw new ApiError(404, 'Vous ne faites pas partie de cette tontine');
+  const tontine = await tontineQ.findById(tontineId);
+  if (!tontine) throw new ApiError(404, 'Tontine introuvable');
+  if (tontine.creatorId !== req.user.id) throw new ApiError(403, 'Seul le createur peut supprimer la tontine');
+  if (tontine.statut !== 'EN_ATTENTE') throw new ApiError(400, 'Impossible de supprimer une tontine active');
   
-  const participationId = user.rows[0].id;
+  await tontineQ.deleteTontine(tontineId);
+  res.json({ success: true, message: 'Tontine supprimee' });
+});
+
+// DELETE /api/tontines/:tontineId/membres/:userId
+const removeMember = asyncHandler(async (req, res) => {
+  const { tontineId, userId } = req.params;
+  const tontine = await tontineQ.findById(tontineId);
+  if (!tontine) throw new ApiError(404, 'Tontine introuvable');
+  if (tontine.creatorId !== req.user.id) throw new ApiError(403, 'Seul le createur peut retirer un membre');
+  if (tontine.statut !== 'EN_ATTENTE') throw new ApiError(400, 'Impossible de retirer un membre d\'une tontine active');
+  if (userId === tontine.creatorId) throw new ApiError(400, 'Le createur ne peut pas se retirer lui-meme');
+
+  await tontineQ.removeMembre(tontineId, userId);
+  res.json({ success: true, message: 'Membre retire' });
+});
+
+// PUT /api/tontines/:tontineId/membres/ordre
+const updateMembresOrdre = asyncHandler(async (req, res) => {
+  const { tontineId } = req.params;
+  const { ordre } = req.body; // [{userId, ordre}]
   
-  // Calculer le montant déjà cotisé
-  const cotisations = await db.query('SELECT SUM(montant) as total FROM "Cotisation" WHERE "participationId"=$1 AND statut=\'PAYEE\'', [participationId]);
-  const montantARetirer = parseFloat(cotisations.rows[0].total || 0);
+  const tontine = await tontineQ.findById(tontineId);
+  if (!tontine) throw new ApiError(404, 'Tontine introuvable');
+  if (tontine.creatorId !== req.user.id) throw new ApiError(403, 'Seul le créateur peut modifier l\'ordre');
+  if (tontine.statut !== 'EN_ATTENTE') throw new ApiError(400, 'Impossible de modifier l\'ordre d\'une tontine déjà démarrée');
   
-  // Ici on simulerait un virement vers le compte de l'utilisateur
-  // Puis on supprime sa participation
-  await tontineQ.removeMembre(tontineId, req.user.id);
+  if (!Array.isArray(ordre) || ordre.length === 0) {
+    throw new ApiError(400, 'L\'ordre doit être un tableau non vide');
+  }
   
-  res.json({ success: true, message: 'Vous avez quitté la tontine', montantRetire: montantARetirer });
+  await tontineQ.updateOrdreDistribution(tontineId, ordre);
+  
+  res.json({ success: true, message: 'Ordre de distribution mis à jour' });
 });
 
 module.exports = { 
   createTontine, getMesTontines, getTontine, getMembres, startTontine,
-  demanderDeblocage, validerDeblocage, quitterEtRetirer
+  joinTontine, deleteTontine, removeMember, updateMembresOrdre
 };
-

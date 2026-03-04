@@ -22,6 +22,7 @@
   },
   "scripts": {
     "dev": "nodemon index.js",
+    "reset-db": "node scripts/reset_db.js",
     "start": "node index.js",
     "init-db": "node init-db.js",
     "test-config": "node test-server.js",

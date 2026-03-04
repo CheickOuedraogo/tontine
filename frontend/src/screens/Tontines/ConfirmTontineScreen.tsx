@@ -1,47 +1,37 @@
 import React from 'react';
-import { View, Text, StyleSheet, SafeAreaView, ScrollView, Alert } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, ScrollView, Alert, TouchableOpacity } from 'react-native';
 import { theme } from '../../theme';
 import { Button } from '../../components/ui/Button';
 import { useTontineStore } from '../../store/useTontineStore';
-import { useNavigation, useRoute } from '@react-navigation/native';
-import { FileCheck, FileText, Users, Calendar, Wallet, ShieldCheck } from 'lucide-react-native';
+import { useNavigation, useRoute, CommonActions } from '@react-navigation/native';
+import { FileCheck, Users, Calendar, Wallet, ShieldCheck, ChevronLeft } from 'lucide-react-native';
 
 export const ConfirmTontineScreen = () => {
     const navigation = useNavigation<any>();
     const route = useRoute<any>();
     const { tontineData } = route.params;
-    const { createTontine, isLoading, error } = useTontineStore();
-
-    const freqLabels: Record<string, string> = {
-        QUOTIDIENNE: 'Quotidienne',
-        HEBDOMADAIRE: 'Hebdomadaire',
-        MENSUELLE: 'Mensuelle',
-        TRIMESTRIELLE: 'Trimestrielle',
-    };
+    const { createTontine, isLoading, fetchMyTontines } = useTontineStore();
 
     const handlePublish = async () => {
-        const { nom, montantCotisation, frequence, dureeTotale, nbMembresAttendu } = tontineData;
-        const payload = { nom, montantCotisation, frequence, dureeTotale, nbMembresAttendu };
-
-        console.log('[ConfirmTontine] Publishing with payload:', JSON.stringify(payload));
-
-        const result = await createTontine(payload);
+        const result = await createTontine(tontineData);
         if (result) {
-            Alert.alert('Tontine créée 🎉', 'Votre tontine a été publiée avec succès !', [
-                { text: 'Inviter des membres', onPress: () => navigation.replace('InviteMembers', { tontineId: result.id, tontineName: result.nom }) },
-                { text: 'Retour à la liste', onPress: () => navigation.navigate('TontinesList') },
-            ]);
+            await fetchMyTontines();
+            navigation.dispatch(
+                CommonActions.reset({
+                    index: 0,
+                    routes: [{ name: 'MainTabs', params: { screen: 'Dashboard' } }],
+                })
+            );
         } else {
             const storeError = useTontineStore.getState().error;
-            Alert.alert('Erreur ❌', storeError || 'Impossible de créer la tontine. Vérifiez votre connexion.');
+            Alert.alert('Erreur', storeError || 'Impossible de creer la tontine.');
         }
     };
 
     const infoRows = [
-        { icon: <FileText color="#6366F1" size={20} />, label: 'Nom', value: tontineData.nom },
+        { icon: <Wallet color="#6366F1" size={20} />, label: 'Nom', value: tontineData.nom },
         { icon: <Wallet color="#059669" size={20} />, label: 'Cotisation', value: `${Number(tontineData.montantCotisation).toLocaleString('fr-FR')} FCFA` },
-        { icon: <Calendar color="#D97706" size={20} />, label: 'Fréquence', value: freqLabels[tontineData.frequence] || tontineData.frequence },
-        { icon: <Calendar color="#6B7280" size={20} />, label: 'Durée', value: `${tontineData.dureeTotale} cycles` },
+        { icon: <Calendar color="#D97706" size={20} />, label: 'Intervalle', value: `Tous les ${tontineData.intervalleJours} jours` },
         { icon: <Users color="#6366F1" size={20} />, label: 'Membres', value: `${tontineData.nbMembresAttendu} personnes` },
     ];
 
@@ -50,10 +40,17 @@ export const ConfirmTontineScreen = () => {
             <ScrollView contentContainerStyle={styles.scrollContent}>
                 {/* Header */}
                 <View style={styles.header}>
+                    <TouchableOpacity 
+                        style={styles.backButton} 
+                        onPress={() => navigation.goBack()}
+                        activeOpacity={0.7}
+                    >
+                        <ChevronLeft color="#1E1B4B" size={24} />
+                    </TouchableOpacity>
                     <View style={styles.iconCircle}>
                         <FileCheck color="#FFFFFF" size={28} />
                     </View>
-                    <Text style={styles.title}>Vérifier et Publier</Text>
+                    <Text style={styles.title}>Verifier et Publier</Text>
                     <Text style={styles.subtitle}>Relisez les informations avant de publier</Text>
 
                     {/* Step indicator */}
@@ -62,7 +59,7 @@ export const ConfirmTontineScreen = () => {
                         <View style={styles.stepLineDone} />
                         <View style={styles.stepDotActive} />
                     </View>
-                    <Text style={styles.stepText}>Étape 2 / 2 — Confirmation</Text>
+                    <Text style={styles.stepText}>Etape 2 / 2 - Confirmation</Text>
                 </View>
 
                 {/* Info Card */}
@@ -83,13 +80,13 @@ export const ConfirmTontineScreen = () => {
                 {/* Trust badge */}
                 <View style={styles.trustBadge}>
                     <ShieldCheck color="#6366F1" size={18} />
-                    <Text style={styles.trustText}>Tontine sécurisée et gérée par TontineFit</Text>
+                    <Text style={styles.trustText}>Tontine securisee et geree par TontineFit</Text>
                 </View>
 
                 {/* Actions */}
                 <View style={styles.actions}>
-                    <Button title="Publier la tontine ✓" onPress={handlePublish} isLoading={isLoading} style={styles.publishBtn} />
-                    <Button title="← Modifier" variant="outline" onPress={() => navigation.goBack()} style={styles.modifyBtn} />
+                    <Button title="Publier la tontine" onPress={handlePublish} isLoading={isLoading} style={styles.publishBtn} />
+                    <Button title="Modifier" variant="outline" onPress={() => navigation.goBack()} style={styles.modifyBtn} />
                 </View>
             </ScrollView>
         </SafeAreaView>
@@ -99,7 +96,20 @@ export const ConfirmTontineScreen = () => {
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: '#F0F2F8' },
     scrollContent: { padding: 20, maxWidth: 520, width: '100%', alignSelf: 'center' },
-    header: { alignItems: 'center', marginBottom: 24 },
+    header: { alignItems: 'center', marginBottom: 24, position: 'relative' },
+    backButton: {
+        position: 'absolute',
+        left: 0,
+        top: 0,
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: '#FFFFFF',
+        justifyContent: 'center',
+        alignItems: 'center',
+        boxShadow: '0px 2px 8px rgba(0,0,0,0.05)',
+        elevation: 2,
+    },
     iconCircle: {
         width: 60, height: 60, borderRadius: 30,
         backgroundColor: '#6366F1',

@@ -81,7 +81,7 @@ export const DistributionScreen = () => {
                     <View style={styles.statCard}>
                         <Calendar color="#FBBF24" size={16} />
                         <Text style={styles.statAmount}>{distributions.length}</Text>
-                        <Text style={styles.statLabel}>Cycles prévus</Text>
+                        <Text style={styles.statLabel}>Tours prévus</Text>
                     </View>
                 </View>
             </View>
@@ -93,7 +93,7 @@ export const DistributionScreen = () => {
                     <View style={{ flex: 1 }}>
                         <Text style={styles.nextLabel}>Prochain bénéficiaire</Text>
                         <Text style={styles.nextName}>
-                            {nextDistribution.prenom} {nextDistribution.nom} — Cycle {nextDistribution.cycleNumero}
+                            {nextDistribution.prenom} {nextDistribution.nom} — Tour {nextDistribution.cycleNumero}
                         </Text>
                     </View>
                     <Text style={styles.nextAmount}>
@@ -133,15 +133,7 @@ export const DistributionScreen = () => {
                                     </View>
                                     <View style={styles.amountsRow}>
                                         <View style={styles.amountItem}>
-                                            <Text style={styles.amountLabel}>Brut</Text>
-                                            <Text style={styles.amountVal}>{Number(item.montantBrut).toLocaleString('fr-FR')} F</Text>
-                                        </View>
-                                        <View style={styles.amountItem}>
-                                            <Text style={styles.amountLabel}>Frais</Text>
-                                            <Text style={[styles.amountVal, { color: '#DC2626' }]}>-{Number(item.montantFrais).toLocaleString('fr-FR')} F</Text>
-                                        </View>
-                                        <View style={styles.amountItem}>
-                                            <Text style={styles.amountLabel}>Net</Text>
+                                            <Text style={styles.amountLabel}>Montant</Text>
                                             <Text style={[styles.amountVal, { color: '#059669', fontWeight: '900' }]}>{Number(item.montantNet).toLocaleString('fr-FR')} F</Text>
                                         </View>
                                     </View>

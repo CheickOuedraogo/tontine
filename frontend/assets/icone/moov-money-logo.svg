@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 520" width="520" height="520">
+
+  <!-- Diamond shape - orange background -->
+  <polygon points="260,20 500,260 260,500 20,260" fill="#F47920"/>
+
+  <!-- White inner border -->
+  <polygon points="260,42 478,260 260,478 42,260" fill="none" stroke="white" stroke-width="7"/>
+
+  <!-- "MOOV" text - blue, bold, uppercase -->
+  <text
+    x="252"
+    y="228"
+    font-family="'Arial Black', 'Helvetica Neue', sans-serif"
+    font-size="80"
+    font-weight="900"
+    fill="#1565C0"
+    text-anchor="middle"
+    letter-spacing="4"
+  >MOOV</text>
+
+  <!-- "Money" text - white, large, italic, bold -->
+  <text
+    x="245"
+    y="318"
+    font-family="'Arial Black', 'Helvetica Neue', sans-serif"
+    font-size="100"
+    font-weight="900"
+    font-style="italic"
+    fill="white"
+    text-anchor="middle"
+    letter-spacing="-2"
+  >Money</text>
+
+  <!-- Cash/bills icon — fan of bills bottom-right of "Money" -->
+  <g transform="translate(390, 285)">
+    <!-- Bill back (rotated more) -->
+    <g transform="rotate(20, 0, 10)">
+      <rect x="-4" y="0" width="46" height="30" rx="4" fill="white" opacity="0.45"/>
+    </g>
+    <!-- Bill middle -->
+    <g transform="rotate(10, 0, 10)">
+      <rect x="-2" y="0" width="46" height="30" rx="4" fill="white" opacity="0.70"/>
+    </g>
+    <!-- Bill front -->
+    <rect x="0" y="0" width="46" height="30" rx="4" fill="white"/>
+    <!-- Lines on front bill -->
+    <line x1="6" y1="10" x2="40" y2="10" stroke="#F47920" stroke-width="3" stroke-linecap="round"/>
+    <line x1="6" y1="18" x2="40" y2="18" stroke="#F47920" stroke-width="2" stroke-linecap="round" opacity="0.5"/>
+  </g>
+
+</svg>

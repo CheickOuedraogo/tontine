@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { forwardRef } from 'react';
 import { View, TextInput, Text, StyleSheet, TextInputProps } from 'react-native';
 import { theme } from '../../theme';
 import { LucideIcon } from 'lucide-react-native';
@@ -9,13 +9,14 @@ interface InputProps extends TextInputProps {
     icon?: LucideIcon;
 }
 
-export const Input = ({ label, error, icon: Icon, style, ...props }: InputProps) => {
+export const Input = forwardRef<TextInput, InputProps>(({ label, error, icon: Icon, style, ...props }, ref) => {
     return (
         <View style={[styles.container, style]}>
             {label && <Text style={styles.label}>{label}</Text>}
             <View style={[styles.inputContainer, error && styles.inputError]}>
                 {Icon && <Icon color={theme.colors.textSecondary} size={20} style={styles.icon} />}
                 <TextInput
+                    ref={ref}
                     style={styles.input}
                     placeholderTextColor={theme.colors.textSecondary}
                     {...props}
@@ -24,7 +25,9 @@ export const Input = ({ label, error, icon: Icon, style, ...props }: InputProps)
             {error && <Text style={styles.errorText}>{error}</Text>}
         </View>
     );
-};
+});
+
+Input.displayName = 'Input';
 
 const styles = StyleSheet.create({
     container: {
