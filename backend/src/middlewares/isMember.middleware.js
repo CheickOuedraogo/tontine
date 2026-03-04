@@ -1,10 +1,10 @@
-﻿import { query } from '../config/db';
-import ApiError from '../utils/ApiError';
+﻿const db = require('../config/db');
+const ApiError = require('../utils/ApiError');
 
 // isMember(req, res, next) => void  — vérifie que req.user est membre de :tontineId
 const isMember = async (req, res, next) => {
   try {
-    const { rows } = await query(
+    const { rows } = await db.query(
       `SELECT 1 FROM "Participation" WHERE "userId"=$1 AND "tontineId"=$2`,
       [req.user.id, req.params.tontineId]
     );
@@ -13,4 +13,4 @@ const isMember = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-export default { isMember };
+module.exports = { isMember };

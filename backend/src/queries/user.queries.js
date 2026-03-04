@@ -8,16 +8,18 @@ const findById = async (id) => {
 
 // findByEmail(email: string) => Promise<User | null>
 const findByEmail = async (email) => {
-  const { rows } = await db.query(`SELECT * FROM "User" WHERE email = $1`, [email]);
+  const cleanEmail = email.trim().toLowerCase();
+  const { rows } = await db.query(`SELECT * FROM "User" WHERE email = $1`, [cleanEmail]);
   return rows[0] || null;
 };
 
 // create(data: {nom, prenom, email, motDePasseHash, telephone}) => Promise<User>
 const create = async ({ nom, prenom, email, motDePasseHash, telephone }) => {
+  const cleanEmail = email.trim().toLowerCase();
   const { rows } = await db.query(
-    `INSERT INTO "User" (nom, prenom, email, "motDePasseHash", telephone)
-     VALUES ($1, $2, $3, $4, $5) RETURNING *`,
-    [nom, prenom, email, motDePasseHash, telephone]
+    `INSERT INTO "User" (nom, prenom, email, "motDePasseHash", telephone, "estVerifie")
+     VALUES ($1, $2, $3, $4, $5, true) RETURNING *`,
+    [nom, prenom, cleanEmail, motDePasseHash, telephone]
   );
   return rows[0];
 };
@@ -36,10 +38,10 @@ const updatePassword = async (id, motDePasseHash) => {
   await db.query(`UPDATE "User" SET "motDePasseHash"=$1 WHERE id=$2`, [motDePasseHash, id]);
 };
 
-// setVerifie(id: string) => Promise<User>
-const setVerifie = async (id) => {
+// updatePhoto(id: string, photo: string) => Promise<User>
+const updatePhoto = async (id, photo) => {
   const { rows } = await db.query(
-    `UPDATE "User" SET "estVerifie"=true WHERE id=$1 RETURNING *`, [id]
+    `UPDATE "User" SET photo=$1 WHERE id=$2 RETURNING *`, [photo, id]
   );
   return rows[0];
 };
@@ -52,4 +54,4 @@ const updateCnib = async (id, urlCnib) => {
   return rows[0];
 };
 
-module.exports = { findById, findByEmail, create, updateProfile, updatePassword, setVerifie, updateCnib };
+module.exports = { findById, findByEmail, create, updateProfile, updatePassword, updatePhoto, updateCnib };

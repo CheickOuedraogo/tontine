@@ -1,12 +1,8 @@
-﻿const nodemailer = require('nodemailer');
+﻿// Mailer désactivé — email sending supprimé
+// Ce fichier est conservé comme placeholder pour une future réintégration
 
-const transporter = nodemailer.createTransport({
-  host: process.env.MAIL_HOST,
-  port: process.env.MAIL_PORT,
-  auth: { user: process.env.MAIL_USER, pass: process.env.MAIL_PASS },
-});
-
-// sendMail(to: string, subject: string, html: string) => Promise<void>
-const sendMail = (to, subject, html) => transporter.sendMail({ from: process.env.MAIL_FROM, to, subject, html });
+const sendMail = async (to, subject, text) => {
+  console.log(`[MAILER DISABLED] Would send to ${to}: ${subject}`);
+};
 
 module.exports = { sendMail };
