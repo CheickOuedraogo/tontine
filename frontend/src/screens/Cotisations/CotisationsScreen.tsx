@@ -162,10 +162,10 @@ export const CotisationsScreen = () => {
                         <View style={styles.cardTopLeft}>
                             {getStatusIcon(item.statut)}
                             <View>
-                                <Text style={styles.cycleTitle}>
+                                <Text style={styles.tourTitle}>
                                     {item.beneficiairePrenom ? `Tour de ${item.beneficiairePrenom} ${item.beneficiaireNom}` : `Tour ${item.cycleNumero}`}
                                 </Text>
-                                <Text style={styles.cycleDate}>
+                                <Text style={styles.tourDate}>
                                     {new Date(item.datePrevue).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })}
                                 </Text>
                             </View>
@@ -277,7 +277,7 @@ export const CotisationsScreen = () => {
                                         <Text style={styles.amountBannerValue}>
                                             {selectedCotisation ? Number(selectedCotisation.montant).toLocaleString('fr-FR') : '0'} FCFA
                                         </Text>
-                                        <Text style={styles.amountBannerCycle}>
+                                        <Text style={styles.amountBannerTour}>
                                             {selectedCotisation?.beneficiairePrenom ? `Tour de ${selectedCotisation.beneficiairePrenom} ${selectedCotisation.beneficiaireNom}` : `Tour ${selectedCotisation?.cycleNumero}`} — Échéance : {selectedCotisation ? new Date(selectedCotisation.datePrevue).toLocaleDateString('fr-FR') : ''}
                                         </Text>
                                     </View>
@@ -507,8 +507,8 @@ const styles = StyleSheet.create({
     cardContent: { flex: 1, padding: 16 },
     cardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
     cardTopLeft: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-    cycleTitle: { fontSize: 15, fontWeight: '700', color: '#1E1B4B' },
-    cycleDate: { fontSize: 12, color: '#64748B', marginTop: 1 },
+    tourTitle: { fontSize: 15, fontWeight: '700', color: '#1E1B4B' },
+    tourDate: { fontSize: 12, color: '#64748B', marginTop: 1 },
     badge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20 },
     badgeText: { fontSize: 11, fontWeight: '700' },
     amountRow: { flexDirection: 'row', alignItems: 'baseline', gap: 4, marginBottom: 4 },
@@ -535,7 +535,7 @@ const styles = StyleSheet.create({
     amountBanner: { backgroundColor: '#1E1B4B', borderRadius: 14, padding: 18, alignItems: 'center', marginBottom: 20 },
     amountBannerLabel: { fontSize: 11, color: '#A5B4FC', fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5 },
     amountBannerValue: { fontSize: 28, fontWeight: '900', color: '#FFFFFF', marginTop: 4 },
-    amountBannerCycle: { fontSize: 12, color: '#C7D2FE', marginTop: 6 },
+    amountBannerTour: { fontSize: 12, color: '#C7D2FE', marginTop: 6 },
 
     // Inputs
     inputLabel: { fontSize: 13, fontWeight: '700', color: '#374151', marginBottom: 6 },

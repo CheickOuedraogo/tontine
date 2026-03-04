@@ -39,7 +39,7 @@ const create = async (data) => {
       montant, 
       intervalle, 
       nbMembres, 
-      nbMembres, // dureeTotale = nombre de membres (chacun reçoit une fois)
+      1, // dureeTotale = 1 (Une seule distribution par tontine)
       data.creatorId, 
       'MENSUELLE',
       'EN_ATTENTE'

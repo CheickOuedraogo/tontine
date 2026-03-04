@@ -116,8 +116,8 @@ export const DistributionScreen = () => {
                                 <View style={[styles.accentBar, { backgroundColor: colors.text }]} />
                                 <View style={styles.cardContent}>
                                     <View style={styles.cardTop}>
-                                        <View style={styles.cycleCircle}>
-                                            <Text style={styles.cycleNum}>{item.cycleNumero}</Text>
+                                        <View style={styles.tourCircle}>
+                                            <Text style={styles.tourNum}>{item.cycleNumero}</Text>
                                         </View>
                                         <View style={{ flex: 1 }}>
                                             <Text style={styles.benefName}>{item.prenom} {item.nom}</Text>
@@ -191,8 +191,8 @@ const styles = StyleSheet.create({
     accentBar: { width: 4 },
     cardContent: { flex: 1, padding: 14 },
     cardTop: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 10 },
-    cycleCircle: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#EEF2FF', justifyContent: 'center', alignItems: 'center' },
-    cycleNum: { fontSize: 14, fontWeight: '900', color: '#6366F1' },
+    tourCircle: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#EEF2FF', justifyContent: 'center', alignItems: 'center' },
+    tourNum: { fontSize: 14, fontWeight: '900', color: '#6366F1' },
     benefName: { fontSize: 15, fontWeight: '700', color: '#1E1B4B' },
     dateText: { fontSize: 12, color: '#64748B', marginTop: 1 },
     statusBadge: { paddingHorizontal: 10, paddingVertical: 3, borderRadius: 20 },

@@ -54,7 +54,7 @@ export const StatistiquesCotisationsScreen = () => {
         }
     };
 
-    // Grouper par cycle
+    // Grouper par tour/échéance
     const cycles = [...new Set(cotisations.map(c => c.cycleNumero))].sort((a, b) => a - b);
     
     // Statistiques globales
@@ -148,7 +148,7 @@ export const StatistiquesCotisationsScreen = () => {
                 </View>
             </View>
 
-            {/* Filtres par cycle */}
+            {/* Filtres par tour/échéance */}
             <View style={styles.filtersRow}>
                 <TouchableOpacity 
                     style={[styles.filterBtn, cycleNumero === null && styles.filterBtnActive]}

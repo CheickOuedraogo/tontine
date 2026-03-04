@@ -131,7 +131,7 @@ const simulerPaiement = asyncHandler(async (req, res) => {
         userId: distRows[0].beneficiaireId,
         type: 'DISTRIBUTION_PRETE',
         titre: 'Distribution effectuée (simulation)',
-        contenu: `Vous avez reçu ${Number(distRows[0].montantNet).toLocaleString('fr-FR')} FCFA (cycle ${cotisation.cycleNumero})`,
+        contenu: `Vous avez reçu ${Number(distRows[0].montantNet).toLocaleString('fr-FR')} FCFA (tour ${cotisation.cycleNumero})`,
         lienAction: `/tontines/${cotisation.tontineId}`
       });
     }
