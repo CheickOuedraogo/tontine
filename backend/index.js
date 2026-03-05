@@ -7,6 +7,10 @@ const { errorHandler } = require('./src/middlewares/errorHandler');
 const corsOptions = require('./src/config/cors');
 
 const app = express();
+const initDb = require('./src/config/initDb');
+
+// Initialisation de la base de données
+initDb();
 
 // Pré-flight CORS : répondre à toutes les routes OPTIONS avant tout autre middleware
 app.use(cors(corsOptions));

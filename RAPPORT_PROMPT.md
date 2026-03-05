@@ -1,31 +1,50 @@
-# Prompt pour Générer le Rapport Final
+# Prompt pour Générer le Rapport Final (Version Expert)
 
-Utilisez le prompt suivant pour demander à une IA de générer votre document final de projet. Remplacez les parties entre crochets par vos informations spécifiques si nécessaire.
+Utilisez ce prompt pour obtenir un rapport exhaustif et professionnel. Il contient tous les détails techniques de l'implémentation finale.
 
 ---
 
 ### Prompt :
 
-"Agis comme un expert en ingénierie logicielle et rédige un rapport de projet structuré pour une application nommée **Tontine App**. L'application est un système de gestion de tontines automatisé et sécurisé.
+"Agis comme un ingénieur logiciel senior et rédige un rapport technique détaillé pour le projet **Tontine App**.
 
-**Structure du document à suivre :**
+**1. Contexte et Objectifs :**
+L'objectif est de moderniser la tontine traditionnelle par une plateforme automatisée. 
+Points clés : Automatisation des calculs, sécurité des fonds, et transparence totale.
 
-1. **Introduction** : Présente le contexte (finance solidaire, tontines traditionnelles) et les objectifs (simplification, transparence, accessibilité).
-2. **Analyse des besoins** : Décris les acteurs (Créateur, Membre, Administrateur) et les cas d'utilisation principaux (Création de tontine, Invitation, Cotisation, Distribution).
-3. **Conception** : 
-   - Explique la structure de données (User, Tontine, Participation, Cotisation, Distribution, Message/Chat).
-   - Détaille la logique de distribution (un seul tour par tontine pour simplifier le processus).
-4. **Développement** :
-   - Présente le stack technique : **Backend** (Node.js, Express, PostgreSQL), **Frontend** (React Native, Expo, Zustand).
-   - Souligne l'utilisation du SQL brut (Queries) pour la performance et de Joi pour la validation.
-5. **Démonstration** : Décris le flux utilisateur : Inscription -> Création de Tontine -> Invitation -> Paiement des cotisations -> Notification de réception des fonds.
-6. **Conclusion** : Résume les défis relevés (gestion des transactions, synchronisation frontend/backend) et les améliorations futures (intégration réelle Ligdicash, systèmes de notation).
+**2. Architecture Technique Détailée :**
+- **Backend (Node.js/Express)** : Architecture MVC simplifiée. Utilisation de **PostgreSQL** avec des requêtes SQL brutes (Performance > Abstraction).
+- **Frontend (React Native/Expo)** : Interface premium avec **Zustand** pour la gestion d'état (plus léger que Redux).
+- **Communication Temps Réel** : **Socket.io** pour le chat intégré entre les membres d'une même tontine.
 
-**Ton :** Professionnel, technique mais accessible.
-**Langue :** Français."
+**3. Logique Métier Avancée (Détails Cruciaux) :**
+- **Modèle One-Shot** : Explique que pour simplifier l'expérience, chaque tontine est désormais conçue pour un tour unique de distribution. Cela évite la confusion des cycles multiples.
+- **Flux de Distribution** : 
+  1. Création avec montant, intervalle et membres.
+  2. Invitation par email (Mailersend).
+  3. Signature électronique du contrat par tous les membres (Condition *sine qua non* pour démarrer).
+  4. Paiement des cotisations : Une fois que **tous** les membres ont payé pour un tour, la distribution est automatiquement marquée comme `EFFECTUEE`.
+  5. Notification instantanée du bénéficiaire.
+- **Gestion de l'Ordre** : L'administrateur peut modifier l'ordre de passage des bénéficiaires avant le lancement.
+
+**4. Sécurité et Validation :**
+- Validation rigoureuse des schémas avec **Joi**.
+- Gestion des erreurs centralisée via un middleware `errorHandler`.
+- Authentification sécurisée par **JWT** (JSON Web Tokens).
+
+**5. Défis Résolus :**
+- Synchronisation des statuts entre les tables `Cotisation` et `Distribution`.
+- Gestion des conflits de fusion (Git) et nettoyage de la terminologie (passage de 'Cycle' à 'Tour').
+- Initialisation automatique de la base de données au lancement du serveur.
+
+**6. Conclusion et Perspectives :**
+- Succès de la simplification du modèle.
+- Perspectives : Intégration réelle de passerelles de paiement (Orange Money, Moov), système de vérification d'identité (KYC).
+
+**Livrables attendus :** Un document structuré, professionnel, alternant explications théoriques et détails d'implémentation."
 
 ---
 
-### Instructions additionnelles :
-- Assurez-vous d'avoir des captures d'écran de l'application (Dashboard, Détails Tontine, Paiement réussi) pour agrémenter la section **Démonstration**.
-- Pour la section **Étapes de développement**, vous pouvez mentionner que le code suit les principes de séparation des préoccupations (Controllers vs Queries).
+### Recommandations pour l'étudiant :
+- Insérez des schémas (UML ou flux) dans le rapport.
+- Ajoutez des captures d'écran de : l'écran d'Admin (gestion de l'ordre), le Chat, et le Dashboard.
