@@ -1,0 +1,20 @@
+{
+  "name": "tontine-app",
+  "version": "1.0.0",
+  "description": "Tontine Application - Root Package",
+  "private": true,
+  "scripts": {
+    "setup": "npm run setup:backend && npm run setup:frontend",
+    "setup:backend": "cd backend && npm install && npm run init-db",
+    "setup:frontend": "cd frontend && npm install",
+    "backend": "cd backend && npm run dev",
+    "frontend": "cd frontend && npx expo start",
+    "android": "cd frontend && npx expo start --android",
+    "ios": "cd frontend && npx expo start --ios",
+    "web": "cd frontend && npx expo start --web",
+    "start": "concurrently \"npm run backend\" \"npx expo start --web\""
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}

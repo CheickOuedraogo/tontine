@@ -7,7 +7,7 @@ const { errorHandler } = require('./src/middlewares/errorHandler');
 const corsOptions = require('./src/config/cors');
 
 const app = express();
-const initDb = require('./src/config/initDb');
+const initDb = require('./src/config/init-db');
 
 // Initialisation de la base de données
 initDb();

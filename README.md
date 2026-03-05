@@ -12,21 +12,20 @@ Cette application permet de gérer des tontines (associations rotatives d'éparg
 
 ## Démarrage Rapide
 
-### Backend
-Aller sur postgres sql, creer votre base de donnée
-creer un fichier .env en vous basant sur .env.example, et remplir les champs nécessaires dont celui de l'url de connexion a votre base de donnée postgres sql.
+### 1. Configuration de l'environnement
+1. **Base de données** : Créez une base de données PostgreSQL.
+2. **Variables d'environnement** :
+   - Dans le dossier `backend`, créez un fichier `.env`.
+   - Copiez le contenu de `.env.example` et remplissez `DATABASE_URL` avec votre URL PostgreSQL.
+
+### 2. Installation et Lancement
+Depuis la racine du projet, lancez :
 
 ```bash
-cd backend
+# Installation de toutes les dépendances et initialisation de la base
 npm install
-npm run init-db
-npm run dev
-```
+npm run setup
 
-### Frontend
-
-```bash
-cd frontend
-npm install
-npx expo start --web
+# Lancement simultané du backend et du frontend
+npm start
 ```
