@@ -48,14 +48,14 @@ export const NotificationsScreen = () => {
         }
     };
 
-    const handleClearAll = () => {
-        showConfirm(
+    const handleClearAll = async () => {
+        const confirmed = await showConfirm(
             'Tout effacer ?',
-            'Voulez-vous vraiment supprimer toutes vos notifications ? Cette action est irréversible.',
-            async () => {
-                await clearAllNotifications();
-            }
+            'Voulez-vous vraiment supprimer toutes vos notifications ? Cette action est irréversible.'
         );
+        if (confirmed) {
+            await clearAllNotifications();
+        }
     };
 
     const handleDelete = async (e: React.MouseEvent, id: string) => {
