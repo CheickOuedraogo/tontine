@@ -1,0 +1,110 @@
+.create-tontine-page {
+  animation: fadeIn 0.4s ease-out;
+  max-width: 520px;
+  margin: 0 auto;
+}
+
+.create-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  margin-bottom: 32px;
+  position: relative;
+}
+
+.back-btn-circle {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--white);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  transition: transform 0.2s ease;
+}
+
+.back-btn-circle:hover {
+  transform: translateX(-4px);
+  color: var(--primary);
+}
+
+.header-icon-main {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: var(--primary);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+  box-shadow: 0 8px 16px rgba(0, 86, 210, 0.2);
+}
+
+.create-header h1 {
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+
+.create-header p {
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.create-card {
+  padding: 32px;
+}
+
+.step-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.step-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--border);
+}
+
+.step-dot.active {
+  background: var(--primary);
+  transform: scale(1.2);
+}
+
+.step-line {
+  width: 40px;
+  height: 2px;
+  background: var(--border);
+}
+
+.step-label {
+  text-align: center;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 32px;
+}
+
+.continue-btn {
+  margin-top: 24px;
+}
+
+@media (max-width: 640px) {
+  .back-btn-circle {
+    position: static;
+    margin-bottom: 16px;
+    align-self: flex-start;
+  }
+}

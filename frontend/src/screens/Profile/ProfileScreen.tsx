@@ -1,18 +1,15 @@
-import React, { useState, useRef } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, ScrollView, Alert, TouchableOpacity, Image, TextInput, Platform } from 'react-native';
-import { theme } from '../../theme';
+import { useState, useRef } from 'react';
 import { useAuthStore } from '../../store/useAuthStore';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
-import { User, Mail, Phone, LogOut, Shield, Camera } from 'lucide-react-native';
+import { User, Mail, Phone, Camera, CheckCircle, AlertCircle } from 'lucide-react';
 import { apiClient } from '../../api/client';
-import * as ImagePicker from 'expo-image-picker';
 import { SOCKET_URL } from '../../constants';
+import './ProfileScreen.css';
 
 export const ProfileScreen = () => {
     const user = useAuthStore(state => state.user);
     const logout = useAuthStore(state => state.logout);
-    const updateUser = useAuthStore(state => state.updateUser);
     const token = useAuthStore(state => state.token);
     const refreshToken = useAuthStore(state => state.refreshToken);
     const setAuth = useAuthStore(state => state.setAuth);
@@ -25,10 +22,10 @@ export const ProfileScreen = () => {
     const [message, setMessage] = useState('');
     const [error, setError] = useState('');
 
-    const prenomRef = useRef<TextInput>(null);
-    const telRef = useRef<TextInput>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
-    const handleUpdate = async () => {
+    const handleUpdate = async (e?: React.FormEvent) => {
+        if (e) e.preventDefault();
         setIsLoading(true);
         setMessage('');
         setError('');
@@ -39,6 +36,7 @@ export const ProfileScreen = () => {
                 telephone: telephone.trim() || undefined,
             });
             if (res.data.success && token) {
+                // Update store
                 await setAuth(token, refreshToken ?? '', res.data.user);
                 setMessage('Profil mis à jour avec succès !');
             }
@@ -49,272 +47,139 @@ export const ProfileScreen = () => {
         }
     };
 
-    const handlePickPhoto = async () => {
-        try {
-            // Request permission
-            const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-            if (status !== 'granted') {
-                Alert.alert('Permission requise', 'Veuillez autoriser l\'accès à la galerie.');
-                return;
-            }
+    const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
 
-            const result = await ImagePicker.launchImageLibraryAsync({
-                mediaTypes: ['images'],
-                allowsEditing: true,
-                aspect: [1, 1],
-                quality: 0.5,
-                base64: true,
+        setIsUploading(true);
+        const formData = new FormData();
+        formData.append('photo', file);
+
+        try {
+            const res = await apiClient.post('/users/me/photo', formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                },
             });
 
-            if (!result.canceled && result.assets[0]) {
-                setIsUploading(true);
-                const asset = result.assets[0];
-                
-                // Create FormData
-                const formData = new FormData();
-                
-                // For React Native / Expo, we need to provide name, type and uri
-                const localUri = asset.uri;
-                const filename = localUri.split('/').pop() || 'photo.jpg';
-                const match = /\.(\w+)$/.exec(filename);
-                const type = match ? `image/${match[1]}` : `image`;
-
-                // @ts-ignore
-                formData.append('photo', { uri: localUri, name: filename, type });
-                
-                const res = await apiClient.post('/users/me/photo', formData, {
-                    headers: {
-                        'Content-Type': 'multipart/form-data',
-                    },
-                });
-
-                if (res.data.success && res.data.data) {
-                    const photoUrl = res.data.data.photo;
-                    await updateUser({ ...user!, photo: photoUrl });
-                    setMessage('Photo mise à jour !');
+            if (res.data.success && res.data.data) {
+                const updatedUser = { ...user!, photo: res.data.data.photo };
+                if (token) {
+                    await setAuth(token, refreshToken ?? '', updatedUser);
                 }
+                setMessage('Photo mise à jour !');
             }
         } catch (err: any) {
-            setError(err.response?.data?.message || 'Erreur lors de l\'upload de la photo.');
+            setError(err.response?.data?.message || 'Erreur lors de l\'upload.');
         } finally {
             setIsUploading(false);
         }
     };
 
-    const handleLogout = async () => {
-        const confirmed = window.confirm('Êtes-vous sûr de vouloir vous déconnecter ?');
-        if (confirmed) {
-            await logout();
+    const handleLogout = () => {
+        if (window.confirm('Êtes-vous sûr de vouloir vous déconnecter ?')) {
+            logout();
         }
     };
 
     return (
-        <SafeAreaView style={styles.container}>
-            <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
-                {/* Profile Header */}
-                <View style={styles.profileHeader}>
-                    <TouchableOpacity onPress={handlePickPhoto} style={styles.avatarContainer} disabled={isUploading}>
-                        {user?.photo ? (
-                            <Image 
-                                source={{ uri: user.photo.startsWith('http') ? user.photo : `${SOCKET_URL}${user.photo}` }} 
-                                style={styles.avatarImage} 
+        <div className="profile-page">
+            <div className="profile-container">
+                <header className="profile-card profile-header-premium premium-card">
+                    <div className="avatar-upload-section">
+                        <div className="avatar-wrapper" onClick={() => fileInputRef.current?.click()}>
+                            {user?.photo ? (
+                                <img 
+                                    src={user.photo.startsWith('http') ? user.photo : `${SOCKET_URL}${user.photo}`} 
+                                    alt="Profile" 
+                                    className="profile-img-large"
+                                />
+                            ) : (
+                                <div className="avatar-placeholder-large">
+                                    {(user?.prenom?.[0] || 'U').toUpperCase()}
+                                    {(user?.nom?.[0] || '').toUpperCase()}
+                                </div>
+                            )}
+                            <div className="camera-badge">
+                                <Camera size={16} color="white" />
+                            </div>
+                            <input 
+                                type="file" 
+                                ref={fileInputRef} 
+                                onChange={handleFileChange} 
+                                style={{ display: 'none' }} 
+                                accept="image/*"
                             />
-                        ) : (
-                            <View style={styles.avatar}>
-                                <Text style={styles.avatarText}>
-                                    {(user?.prenom?.[0] || 'U').toUpperCase()}{(user?.nom?.[0] || '').toUpperCase()}
-                                </Text>
-                            </View>
-                        )}
-                        <View style={styles.cameraOverlay}>
-                            <Camera color={theme.colors.white} size={16} />
-                        </View>
-                    </TouchableOpacity>
-                    <Text style={styles.name}>{user?.prenom} {user?.nom}</Text>
-                    <Text style={styles.email}>{user?.email}</Text>
-                </View>
+                        </div>
+                        <div className="profile-identity">
+                            <h2>{user?.prenom} {user?.nom}</h2>
+                            <p>{user?.email}</p>
+                        </div>
+                    </div>
+                </header>
 
-                {/* Edit Card */}
-                <View style={styles.card}>
-                    <Text style={styles.cardTitle}>Informations personnelles</Text>
+                <main className="profile-card edit-card-premium premium-card">
+                    <h3>Informations personnelles</h3>
+                    
+                    {message && (
+                        <div className="status-banner success">
+                            <CheckCircle size={18} />
+                            <span>{message}</span>
+                        </div>
+                    )}
+                    
+                    {error && (
+                        <div className="status-banner error">
+                            <AlertCircle size={18} />
+                            <span>{error}</span>
+                        </div>
+                    )}
 
-                    {message ? (
-                        <View style={styles.successBanner}>
-                            <Text style={styles.successText}>{message}</Text>
-                        </View>
-                    ) : null}
-                    {error ? (
-                        <View style={styles.errorBanner}>
-                            <Text style={styles.errorText}>{error}</Text>
-                        </View>
-                    ) : null}
+                    <form onSubmit={handleUpdate} className="profile-form">
+                        <Input
+                            label="Nom"
+                            value={nom}
+                            onChange={(e) => setNom(e.target.value)}
+                            icon={User}
+                        />
+                        <Input
+                            label="Prénom"
+                            value={prenom}
+                            onChange={(e) => setPrenom(e.target.value)}
+                            icon={User}
+                        />
+                        <Input
+                            label="Téléphone"
+                            value={telephone}
+                            onChange={(e) => setTelephone(e.target.value)}
+                            icon={Phone}
+                            type="tel"
+                        />
+                        <Input 
+                            label="Email" 
+                            value={user?.email || ''} 
+                            disabled 
+                            icon={Mail} 
+                        />
 
-                    <Input
-                        label="Nom"
-                        value={nom}
-                        onChangeText={setNom}
-                        icon={User}
-                        returnKeyType="next"
-                        onSubmitEditing={() => prenomRef.current?.focus()}
-                        blurOnSubmit={false}
-                    />
-                    <Input
-                        ref={prenomRef}
-                        label="Prénom"
-                        value={prenom}
-                        onChangeText={setPrenom}
-                        icon={User}
-                        returnKeyType="next"
-                        onSubmitEditing={() => telRef.current?.focus()}
-                        blurOnSubmit={false}
-                    />
-                    <Input
-                        ref={telRef}
-                        label="Téléphone"
-                        value={telephone}
-                        onChangeText={setTelephone}
-                        icon={Phone}
-                        keyboardType="phone-pad"
-                        returnKeyType="done"
-                        onSubmitEditing={handleUpdate}
-                    />
-                    <Input label="Email" value={user?.email || ''} editable={false} icon={Mail} />
+                        <div className="form-actions-profile">
+                            <Button
+                                title="Sauvegarder les modifications"
+                                type="submit"
+                                isLoading={isLoading || isUploading}
+                            />
+                        </div>
+                    </form>
+                </main>
 
+                <div className="logout-section">
                     <Button
-                        title="Sauvegarder"
-                        onPress={handleUpdate}
-                        isLoading={isLoading}
-                        style={{ marginTop: theme.spacing.md }}
+                        title="Se déconnecter"
+                        variant="danger"
+                        onClick={handleLogout}
                     />
-                </View>
-
-                {/* Logout */}
-                <Button
-                    title="Se déconnecter"
-                    variant="danger"
-                    onPress={handleLogout}
-                    style={{ marginTop: theme.spacing.lg }}
-                />
-            </ScrollView>
-        </SafeAreaView>
+                </div>
+            </div>
+        </div>
     );
 };
-
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: theme.colors.surfaceDarker,
-    },
-    scrollContent: {
-        padding: theme.spacing.lg,
-        maxWidth: 520,
-        width: '100%',
-        alignSelf: 'center',
-    },
-    profileHeader: {
-        alignItems: 'center',
-        padding: theme.spacing.xl,
-        backgroundColor: theme.colors.white,
-        borderRadius: theme.components.borderRadius.xl,
-        marginBottom: theme.spacing.lg,
-        boxShadow: '0px 2px 12px rgba(0,0,0,0.06)',
-        elevation: 3,
-    },
-    avatarContainer: {
-        position: 'relative',
-        marginBottom: theme.spacing.md,
-    },
-    avatar: {
-        width: 90,
-        height: 90,
-        borderRadius: 45,
-        backgroundColor: theme.colors.primary,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    avatarImage: {
-        width: 90,
-        height: 90,
-        borderRadius: 45,
-    },
-    avatarText: {
-        color: theme.colors.white,
-        fontSize: 30,
-        fontWeight: '900',
-    },
-    cameraOverlay: {
-        position: 'absolute',
-        bottom: 0,
-        right: 0,
-        width: 32,
-        height: 32,
-        borderRadius: 16,
-        backgroundColor: theme.colors.primary,
-        justifyContent: 'center',
-        alignItems: 'center',
-        borderWidth: 2,
-        borderColor: theme.colors.white,
-    },
-    name: {
-        fontSize: 22,
-        fontWeight: 'bold',
-        color: theme.colors.text,
-    },
-    email: {
-        fontSize: 14,
-        color: theme.colors.textSecondary,
-        marginTop: 4,
-    },
-    roleBadge: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: theme.colors.primaryLight,
-        paddingHorizontal: theme.spacing.md,
-        paddingVertical: 4,
-        borderRadius: theme.components.borderRadius.round,
-        marginTop: theme.spacing.sm,
-        gap: 4,
-    },
-    roleText: {
-        color: theme.colors.primaryDark,
-        fontWeight: '600',
-        fontSize: 12,
-    },
-    card: {
-        backgroundColor: theme.colors.white,
-        padding: theme.spacing.xl,
-        borderRadius: theme.components.borderRadius.xl,
-        boxShadow: '0px 2px 12px rgba(0,0,0,0.06)',
-        elevation: 3,
-    },
-    cardTitle: {
-        fontSize: 18,
-        fontWeight: 'bold',
-        color: theme.colors.text,
-        marginBottom: theme.spacing.lg,
-    },
-    successBanner: {
-        backgroundColor: theme.colors.successLight,
-        padding: theme.spacing.md,
-        borderRadius: theme.components.borderRadius.md,
-        marginBottom: theme.spacing.md,
-        borderLeftWidth: 4,
-        borderLeftColor: theme.colors.success,
-    },
-    successText: {
-        color: theme.colors.success,
-        fontWeight: '600',
-    },
-    errorBanner: {
-        backgroundColor: theme.colors.errorLight,
-        padding: theme.spacing.md,
-        borderRadius: theme.components.borderRadius.md,
-        marginBottom: theme.spacing.md,
-        borderLeftWidth: 4,
-        borderLeftColor: theme.colors.error,
-    },
-    errorText: {
-        color: theme.colors.error,
-        fontWeight: '600',
-    },
-});

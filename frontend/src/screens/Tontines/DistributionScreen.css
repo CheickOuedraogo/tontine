@@ -1,0 +1,180 @@
+.distribution-page {
+  animation: fadeIn 0.4s ease-out;
+}
+
+.distribution-header {
+  background: var(--primary-darker);
+  color: white;
+}
+
+.back-btn-details.inverse {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  box-shadow: none;
+}
+
+.back-btn-details.inverse:hover {
+  background: rgba(255, 255, 255, 0.3);
+  color: white;
+}
+
+.distribution-content-container {
+  max-width: 600px;
+  margin: 0 auto;
+  padding-top: 24px;
+}
+
+.next-beneficiary-card {
+  padding: 24px;
+  background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%);
+  color: white;
+  margin-bottom: 32px;
+  position: relative;
+  overflow: hidden;
+}
+
+.next-beneficiary-card::after {
+  content: '';
+  position: absolute;
+  top: -20%;
+  right: -10%;
+  width: 150px;
+  height: 150px;
+  background: rgba(99, 102, 241, 0.2);
+  border-radius: 50%;
+  filter: blur(40px);
+}
+
+.next-badge {
+  display: inline-block;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  margin-bottom: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.next-main-info {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  position: relative;
+  z-index: 1;
+}
+
+.next-icon-wrapper {
+  width: 54px;
+  height: 54px;
+  background: var(--primary);
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+}
+
+.next-text {
+  flex: 1;
+}
+
+.next-text h3 {
+  font-size: 20px;
+  font-weight: 800;
+  margin: 0;
+}
+
+.next-text p {
+  font-size: 14px;
+  opacity: 0.7;
+  margin-top: 4px;
+}
+
+.next-amount {
+  font-size: 22px;
+  font-weight: 900;
+  color: var(--primary-light);
+}
+
+.distributions-list-web {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.distribution-row-web {
+  display: flex;
+  align-items: center;
+  padding: 18px 20px;
+  gap: 16px;
+}
+
+.dist-tour-num {
+  width: 44px;
+  height: 44px;
+  background: var(--surface);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--primary);
+  border: 1px solid var(--border);
+}
+
+.dist-benef-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.dist-benef-info .m-name {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.dist-benef-info .m-date {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+.dist-amount-status {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+}
+
+.m-amount {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--text);
+}
+
+.m-status-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.m-status-pill.EFFECTUEE { background: #d1fae5; color: #059669; }
+.m-status-pill.ANNULEE { background: #f1f5f9; color: #64748b; }
+.m-status-pill.PLANIFIEE { background: #fef3c7; color: #d97706; }
+
+@media (max-width: 640px) {
+  .distribution-row-web {
+    padding: 14px;
+  }
+  .next-main-info {
+    flex-wrap: wrap;
+  }
+}

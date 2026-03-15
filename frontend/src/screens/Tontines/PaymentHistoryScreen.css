@@ -1,0 +1,94 @@
+.payment-history-page {
+  animation: fadeIn 0.4s ease-out;
+}
+
+.history-header {
+  background: var(--primary-darker);
+  color: white;
+}
+
+.payment-history-content {
+  max-width: 600px;
+  margin: 0 auto;
+  padding-top: 24px;
+}
+
+.payments-list-web {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.payment-row-web {
+  padding: 16px 20px;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.payment-row-web:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.08);
+}
+
+.payment-main-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+
+.payment-amount-box {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.p-amount {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--text);
+}
+
+.p-status-badge {
+  align-self: flex-start;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.p-status-badge.PAYEE { background: #d1fae5; color: #059669; }
+.p-status-badge.EN_ATTENTE { background: #fef3c7; color: #d97706; }
+.p-status-badge.EN_RETARD { background: #fee2e2; color: #dc2626; }
+.p-status-badge.ANNULEE { background: #f1f5f9; color: #64748b; }
+
+.payment-secondary-info {
+  text-align: right;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.p-date {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.p-details {
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+@media (max-width: 640px) {
+  .payment-main-info {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .payment-secondary-info {
+    text-align: left;
+  }
+}

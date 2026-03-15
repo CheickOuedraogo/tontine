@@ -9,9 +9,11 @@ export interface Contrat {
 
 export interface Signature {
     id: string;
+    contratId: string;
     userId: string;
     dateSignature: string;
-    accepte: boolean;
+    nom?: string;
+    prenom?: string;
 }
 
 export const contratApi = {
@@ -19,19 +21,16 @@ export const contratApi = {
         const response = await apiClient.get<{ success: boolean; contrat: Contrat }>(`/contrats/tontine/${tontineId}`);
         return response.data.contrat;
     },
-
-    createContrat: async (tontineId: string, texteContrat: string) => {
-        const response = await apiClient.post<{ success: boolean; contrat: Contrat }>(`/contrats/tontine/${tontineId}`, { texteContrat });
-        return response.data.contrat;
-    },
-
     getSignatures: async (contratId: string) => {
         const response = await apiClient.get<{ success: boolean; signatures: Signature[] }>(`/contrats/${contratId}/signatures`);
         return response.data.signatures;
     },
-
     signerContrat: async (contratId: string) => {
-        const response = await apiClient.post<{ success: boolean; signature: Signature }>(`/contrats/${contratId}/signer`);
+        const response = await apiClient.post<{ success: boolean; message: string }>(`/contrats/${contratId}/signer`);
         return response.data;
+    },
+    createContrat: async (tontineId: string, texte: string) => {
+        const response = await apiClient.post<{ success: boolean; contrat: Contrat }>(`/contrats`, { tontineId, texteContrat: texte });
+        return response.data.contrat;
     }
 };

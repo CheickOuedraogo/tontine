@@ -1,6 +1,5 @@
 import { create } from 'zustand';
 import { io, Socket } from 'socket.io-client';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SOCKET_URL } from '../constants';
 
 export interface ChatMessage {
@@ -32,15 +31,13 @@ export const useChatStore = create<ChatState>((set, get) => ({
     currentTontineId: null,
 
     connect: async (tontineId: string) => {
-        const token = await AsyncStorage.getItem('token');
-        const { currentTontineId, messages } = get();
+        const token = localStorage.getItem('token');
+        const { currentTontineId } = get();
 
-        // Éviter les connexions multiples
         if (get().socket) {
             get().socket?.disconnect();
         }
 
-        // Reset messages ONLY if we change room
         if (currentTontineId !== tontineId) {
             set({ messages: [], currentTontineId: tontineId });
         }
@@ -55,7 +52,6 @@ export const useChatStore = create<ChatState>((set, get) => ({
             socket.emit('join_room', { tontineId });
         });
 
-        // Receive chat history (sent by backend on join_room)
         socket.on('chat_history', (history: ChatMessage[]) => {
             set({ messages: Array.isArray(history) ? history : [] });
         });
@@ -78,7 +74,6 @@ export const useChatStore = create<ChatState>((set, get) => ({
         if (socket) {
             socket.disconnect();
             set({ socket: null, isConnected: false });
-            // NOTE: we do NOT clear messages so they persist if user navigates back
         }
     },
 
@@ -91,7 +86,6 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
     addMessage: (message: ChatMessage) => {
         set((state) => ({
-            // Prepend because FlatList is inverted
             messages: [message, ...state.messages]
         }));
     }

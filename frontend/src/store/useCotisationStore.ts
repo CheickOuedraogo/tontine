@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { Cotisation, cotisationApi } from '../api/cotisation';
+import { type Cotisation, cotisationApi } from '../api/cotisation';
 
 interface CotisationState {
     cotisations: Cotisation[];
@@ -7,10 +7,10 @@ interface CotisationState {
     error: string | null;
 
     fetchCotisations: (tontineId: string) => Promise<void>;
-    payerCotisation: (cotisationId: string, operateur?: string) => Promise<boolean>;
+    payerCotisation: (cotisationId: string, simulationRef: string, operateur?: string) => Promise<boolean>;
 }
 
-export const useCotisationStore = create<CotisationState>((set, get) => ({
+export const useCotisationStore = create<CotisationState>((set) => ({
     cotisations: [],
     isLoading: false,
     error: null,
@@ -18,7 +18,7 @@ export const useCotisationStore = create<CotisationState>((set, get) => ({
     fetchCotisations: async (tontineId: string) => {
         set({ isLoading: true, error: null });
         try {
-            const data = await cotisationApi.getMesCotisations(tontineId);
+            const data = await cotisationApi.getTontineCotisations(tontineId);
             set({ cotisations: data, isLoading: false });
         } catch (error: any) {
             set({
@@ -28,16 +28,18 @@ export const useCotisationStore = create<CotisationState>((set, get) => ({
         }
     },
 
-    payerCotisation: async (cotisationId: string, operateur?: string) => {
+    payerCotisation: async (cotisationId: string, simulationRef: string, _operateur?: string) => {
         set({ isLoading: true, error: null });
         try {
-            await cotisationApi.payerCotisation(cotisationId, operateur);
+            await cotisationApi.payCotisation(cotisationId, simulationRef);
 
             // Update local state to reflect payment
-            const updatedCotisations = get().cotisations.map(c =>
-                c.id === cotisationId ? { ...c, statut: 'PAYEE', datePaiement: new Date().toISOString() } : c
-            );
-            set({ cotisations: updatedCotisations as any, isLoading: false });
+            set((state) => ({
+                cotisations: state.cotisations.map(c =>
+                    c.id === cotisationId ? { ...c, statut: 'PAYEE', datePaiement: new Date().toISOString() } : c
+                ),
+                isLoading: false
+            }));
             return true;
         } catch (error: any) {
             set({

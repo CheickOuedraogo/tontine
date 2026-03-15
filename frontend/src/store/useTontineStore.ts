@@ -1,5 +1,6 @@
 import { create } from 'zustand';
-import { Tontine, tontineApi, CreateTontinePayload } from '../api/tontine';
+import { type Tontine, tontineApi, type CreateTontinePayload } from '../api/tontine';
+import { type AppNotification, notificationApi } from '../api/notification';
 import { apiClient } from '../api/client';
 
 interface TontineState {
@@ -16,7 +17,6 @@ interface TontineState {
     deleteTontine: (id: string) => Promise<boolean>;
     respondToInvitation: (invitationId: string, action: 'accepter' | 'refuser') => Promise<boolean>;
 }
-
 
 export const useTontineStore = create<TontineState>((set, get) => ({
     tontines: [],

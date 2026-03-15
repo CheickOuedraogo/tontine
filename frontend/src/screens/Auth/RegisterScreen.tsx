@@ -1,14 +1,13 @@
-import React, { useState, useRef } from 'react';
-import { View, Text, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, TouchableOpacity, TextInput } from 'react-native';
-import { theme } from '../../theme';
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Mail, Lock, User, Phone, UserPlus, ArrowLeft } from 'lucide-react';
+import { apiClient } from '../../api/client';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
-import { Mail, Lock, User, Phone, UserPlus, ArrowLeft } from 'lucide-react-native';
-import { apiClient } from '../../api/client';
-import { useNavigation } from '@react-navigation/native';
+import './RegisterScreen.css';
 
 export const RegisterScreen = () => {
-    const navigation = useNavigation<any>();
+    const navigate = useNavigate();
     const [nom, setNom] = useState('');
     const [prenom, setPrenom] = useState('');
     const [email, setEmail] = useState('');
@@ -19,14 +18,8 @@ export const RegisterScreen = () => {
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
 
-    // Refs for keyboard navigation
-    const prenomRef = useRef<TextInput>(null);
-    const emailRef = useRef<TextInput>(null);
-    const telRef = useRef<TextInput>(null);
-    const passRef = useRef<TextInput>(null);
-    const confirmRef = useRef<TextInput>(null);
-
-    const handleRegister = async () => {
+    const handleRegister = async (e: React.FormEvent) => {
+        e.preventDefault();
         setError('');
         setSuccess('');
 
@@ -56,7 +49,7 @@ export const RegisterScreen = () => {
             if (response.data.success) {
                 setSuccess('Compte créé avec succès ! Vous pouvez maintenant vous connecter.');
                 setTimeout(() => {
-                    navigation.navigate('Login');
+                    navigate('/login');
                 }, 1500);
             } else {
                 setError(response.data.message || 'Erreur lors de la création du compte.');
@@ -70,259 +63,116 @@ export const RegisterScreen = () => {
     };
 
     return (
-        <View style={styles.pageContainer}>
-            <KeyboardAvoidingView
-                style={styles.container}
-                behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-            >
-                <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-                    {/* Back button */}
-                    <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-                        <ArrowLeft color={theme.colors.text} size={24} />
-                        <Text style={styles.backText}>Retour</Text>
-                    </TouchableOpacity>
+        <div className="auth-page">
+            <div className="auth-container register-container">
+                <button onClick={() => navigate(-1)} className="back-btn">
+                    <ArrowLeft size={20} />
+                    <span>Retour</span>
+                </button>
 
-                    <View style={styles.header}>
-                        <View style={styles.logoCircle}>
-                            <UserPlus color={theme.colors.white} size={32} />
-                        </View>
-                        <Text style={styles.title}>Créer un compte</Text>
-                        <Text style={styles.subtitle}>Rejoignez la communauté TontineFit</Text>
-                    </View>
+                <div className="auth-header">
+                    <div className="logo-circle">
+                        <UserPlus className="logo-icon" size={32} />
+                    </div>
+                    <h1>Créer un compte</h1>
+                    <p>Rejoignez la communauté TontineFit</p>
+                </div>
 
-                    <View style={styles.card}>
-                        {error ? (
-                            <View style={styles.errorBanner}>
-                                <Text style={styles.errorBannerText}>{error}</Text>
-                            </View>
-                        ) : null}
+                <div className="premium-card auth-card">
+                    {error && (
+                        <div className="error-banner">
+                            <span>{error}</span>
+                        </div>
+                    )}
 
-                        {success ? (
-                            <View style={styles.successBanner}>
-                                <Text style={styles.successBannerText}>{success}</Text>
-                            </View>
-                        ) : null}
+                    {success && (
+                        <div className="success-banner">
+                            <span>{success}</span>
+                        </div>
+                    )}
 
-                        <View style={styles.row}>
-                            <View style={styles.halfInput}>
-                                <Input
-                                    label="Nom *"
-                                    placeholder="Votre nom"
-                                    value={nom}
-                                    onChangeText={(t: string) => { setNom(t); setError(''); }}
-                                    icon={User}
-                                    returnKeyType="next"
-                                    onSubmitEditing={() => prenomRef.current?.focus()}
-                                    blurOnSubmit={false}
-                                />
-                            </View>
-                            <View style={styles.halfInput}>
-                                <Input
-                                    ref={prenomRef}
-                                    label="Prénom *"
-                                    placeholder="Votre prénom"
-                                    value={prenom}
-                                    onChangeText={(t: string) => { setPrenom(t); setError(''); }}
-                                    icon={User}
-                                    returnKeyType="next"
-                                    onSubmitEditing={() => emailRef.current?.focus()}
-                                    blurOnSubmit={false}
-                                />
-                            </View>
-                        </View>
+                    <form onSubmit={handleRegister}>
+                        <div className="form-row">
+                            <Input
+                                label="Nom *"
+                                placeholder="Votre nom"
+                                value={nom}
+                                onChange={(e) => { setNom(e.target.value); setError(''); }}
+                                icon={User}
+                                required
+                            />
+                            <Input
+                                label="Prénom *"
+                                placeholder="Votre prénom"
+                                value={prenom}
+                                onChange={(e) => { setPrenom(e.target.value); setError(''); }}
+                                icon={User}
+                                required
+                            />
+                        </div>
 
                         <Input
-                            ref={emailRef}
                             label="Adresse Email *"
                             placeholder="votre@email.com"
+                            type="email"
                             value={email}
-                            onChangeText={(t: string) => { setEmail(t); setError(''); }}
-                            keyboardType="email-address"
-                            autoCapitalize="none"
+                            onChange={(e) => { setEmail(e.target.value); setError(''); }}
                             icon={Mail}
-                            returnKeyType="next"
-                            onSubmitEditing={() => telRef.current?.focus()}
-                            blurOnSubmit={false}
+                            required
                         />
 
                         <Input
-                            ref={telRef}
                             label="Téléphone"
                             placeholder="+226 70 00 00 00"
+                            type="tel"
                             value={telephone}
-                            onChangeText={(t: string) => { setTelephone(t); setError(''); }}
-                            keyboardType="phone-pad"
+                            onChange={(e) => { setTelephone(e.target.value); setError(''); }}
                             icon={Phone}
-                            returnKeyType="next"
-                            onSubmitEditing={() => passRef.current?.focus()}
-                            blurOnSubmit={false}
                         />
 
                         <Input
-                            ref={passRef}
                             label="Mot de passe *"
                             placeholder="Minimum 6 caractères"
+                            type="password"
                             value={password}
-                            onChangeText={(t: string) => { setPassword(t); setError(''); }}
-                            secureTextEntry
+                            onChange={(e) => { setPassword(e.target.value); setError(''); }}
                             icon={Lock}
-                            returnKeyType="next"
-                            onSubmitEditing={() => confirmRef.current?.focus()}
-                            blurOnSubmit={false}
+                            required
                         />
 
                         <Input
-                            ref={confirmRef}
                             label="Confirmer le mot de passe *"
                             placeholder="Retapez le mot de passe"
+                            type="password"
                             value={confirmPassword}
-                            onChangeText={(t: string) => { setConfirmPassword(t); setError(''); }}
-                            secureTextEntry
+                            onChange={(e) => { setConfirmPassword(e.target.value); setError(''); }}
                             icon={Lock}
-                            returnKeyType="done"
-                            onSubmitEditing={handleRegister}
+                            required
                         />
 
                         <Button
                             title="Créer mon compte"
-                            onPress={handleRegister}
+                            type="submit"
                             isLoading={isLoading}
-                            style={styles.registerBtn}
+                            className="register-btn"
                         />
+                    </form>
 
-                        <View style={styles.divider}>
-                            <View style={styles.dividerLine} />
-                            <Text style={styles.dividerText}>ou</Text>
-                            <View style={styles.dividerLine} />
-                        </View>
+                    <div className="divider">
+                        <div className="divider-line"></div>
+                        <span>ou</span>
+                        <div className="divider-line"></div>
+                    </div>
 
-                        <Button
-                            title="J'ai déjà un compte"
-                            variant="outline"
-                            onPress={() => navigation.navigate('Login')}
-                        />
-                    </View>
+                    <Button
+                        title="J'ai déjà un compte"
+                        variant="outline"
+                        onClick={() => navigate('/login')}
+                    />
+                </div>
 
-                    <Text style={styles.footerText}>© 2026 TontineFit — Tous droits réservés</Text>
-                </ScrollView>
-            </KeyboardAvoidingView>
-        </View>
+                <p className="auth-footer">© 2026 TontineFit — Tous droits réservés</p>
+            </div>
+        </div>
     );
 };
-
-const styles = StyleSheet.create({
-    pageContainer: {
-        flex: 1,
-        backgroundColor: '#EEF2FF',
-    },
-    container: {
-        flex: 1,
-        maxWidth: 520,
-        width: '100%',
-        alignSelf: 'center',
-    },
-    scrollContent: {
-        flexGrow: 1,
-        padding: theme.spacing.lg,
-        justifyContent: 'center',
-    },
-    backBtn: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: theme.spacing.md,
-        gap: 8,
-    },
-    backText: {
-        fontSize: 16,
-        color: theme.colors.text,
-        fontWeight: '600',
-    },
-    header: {
-        alignItems: 'center',
-        marginBottom: theme.spacing.xl,
-    },
-    logoCircle: {
-        width: 64,
-        height: 64,
-        borderRadius: 32,
-        backgroundColor: theme.colors.primary,
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginBottom: theme.spacing.md,
-    },
-    title: {
-        fontSize: 28,
-        fontWeight: '900',
-        color: theme.colors.primary,
-    },
-    subtitle: {
-        fontSize: 14,
-        color: theme.colors.textSecondary,
-        marginTop: 4,
-    },
-    card: {
-        backgroundColor: theme.colors.white,
-        padding: theme.spacing.xl,
-        borderRadius: theme.components.borderRadius.xl,
-        boxShadow: '0px 4px 24px rgba(0, 86, 210, 0.10)',
-        elevation: 6,
-    },
-    errorBanner: {
-        backgroundColor: theme.colors.errorLight,
-        padding: theme.spacing.md,
-        borderRadius: theme.components.borderRadius.md,
-        marginBottom: theme.spacing.md,
-        borderLeftWidth: 4,
-        borderLeftColor: theme.colors.error,
-    },
-    errorBannerText: {
-        color: theme.colors.error,
-        fontSize: 14,
-        fontWeight: '600',
-    },
-    successBanner: {
-        backgroundColor: theme.colors.successLight,
-        padding: theme.spacing.md,
-        borderRadius: theme.components.borderRadius.md,
-        marginBottom: theme.spacing.md,
-        borderLeftWidth: 4,
-        borderLeftColor: theme.colors.success,
-    },
-    successBannerText: {
-        color: theme.colors.success,
-        fontSize: 14,
-        fontWeight: '600',
-    },
-    row: {
-        flexDirection: 'row',
-        gap: theme.spacing.md,
-    },
-    halfInput: {
-        flex: 1,
-    },
-    registerBtn: {
-        marginTop: theme.spacing.sm,
-        marginBottom: theme.spacing.md,
-    },
-    divider: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: theme.spacing.md,
-    },
-    dividerLine: {
-        flex: 1,
-        height: 1,
-        backgroundColor: theme.colors.border,
-    },
-    dividerText: {
-        color: theme.colors.textSecondary,
-        paddingHorizontal: theme.spacing.md,
-        fontSize: 13,
-    },
-    footerText: {
-        textAlign: 'center',
-        color: theme.colors.textSecondary,
-        fontSize: 12,
-        marginTop: theme.spacing.xl,
-    }
-});

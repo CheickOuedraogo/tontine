@@ -1,8 +1,8 @@
 import { create } from 'zustand';
-import { Notification, notificationApi } from '../api/notification';
+import { type AppNotification, notificationApi } from '../api/notification';
 
 interface NotificationState {
-    notifications: Notification[];
+    notifications: AppNotification[];
     unreadCount: number;
     isLoading: boolean;
 
@@ -19,9 +19,12 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
     fetchNotifications: async () => {
         set({ isLoading: true });
         try {
-            const result = await notificationApi.getNotifications();
-            const notifs = result?.data?.notifications || result?.data || [];
-            set({ notifications: Array.isArray(notifs) ? notifs : [], isLoading: false });
+            const notifs = await notificationApi.getNotifications();
+            set({ 
+                notifications: Array.isArray(notifs) ? notifs : [], 
+                unreadCount: Array.isArray(notifs) ? notifs.filter(n => !n.lu).length : 0,
+                isLoading: false 
+            });
         } catch {
             set({ isLoading: false });
         }
@@ -29,26 +32,23 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
 
     markAsRead: async (id: string) => {
         try {
-            await notificationApi.marquerLue(id);
-
+            await notificationApi.markAsRead(id);
             const updatedNotifs = get().notifications.map(n =>
-                n.id === id ? { ...n, estLue: true } : n
+                n.id === id ? { ...n, lu: true } : n
             );
-
             const newCount = Math.max(0, get().unreadCount - 1);
-
             set({ notifications: updatedNotifs, unreadCount: newCount });
         } catch (e) {
-            // Error handling left empty as per production best practices for silent failable UI updates
+            // silent fail
         }
     },
 
     fetchUnreadCount: async () => {
         try {
-            const count = await notificationApi.getUnreadCount();
-            set({ unreadCount: count || 0 });
+            const notifs = await notificationApi.getNotifications();
+            set({ unreadCount: Array.isArray(notifs) ? notifs.filter(n => !n.lu).length : 0 });
         } catch {
-            set({ unreadCount: 0 });
+            // silent fail
         }
     }
 }));

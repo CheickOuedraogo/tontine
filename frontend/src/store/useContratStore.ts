@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { Contrat, Signature, contratApi } from '../api/contrat';
+import { type Contrat, type Signature, contratApi } from '../api/contrat';
 
 interface ContratState {
     currentContrat: Contrat | null;
@@ -24,7 +24,6 @@ export const useContratStore = create<ContratState>((set, get) => ({
             const data = await contratApi.getContrat(tontineId);
             set({ currentContrat: data, isLoading: false });
         } catch (error: any) {
-            // 404 = no contract yet, not an error
             if (error.response?.status === 404) {
                 set({ currentContrat: null, isLoading: false, error: null });
             } else {
@@ -50,7 +49,6 @@ export const useContratStore = create<ContratState>((set, get) => ({
         set({ isLoading: true, error: null });
         try {
             await contratApi.signerContrat(contratId);
-            // Refresh signatures local list
             await get().fetchSignatures(contratId);
             set({ isLoading: false });
             return true;

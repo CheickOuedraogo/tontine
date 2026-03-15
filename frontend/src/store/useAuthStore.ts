@@ -1,5 +1,4 @@
 import { create } from 'zustand';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface User {
     id: string;
@@ -17,13 +16,12 @@ interface AuthState {
     user: User | null;
     isAuthenticated: boolean;
     isLoading: boolean;
-    setAuth: (token: string, refreshToken: string, user: User) => Promise<void>;
-    updateUser: (user: User) => Promise<void>;
-    logout: () => Promise<void>;
-    checkAuth: () => Promise<void>;
+    setAuth: (token: string, refreshToken: string, user: User) => void;
+    updateUser: (user: User) => void;
+    logout: () => void;
+    checkAuth: () => void;
 }
 
-/** Décode le payload JWT sans vérifier la signature (vérification faite côté serveur uniquement). */
 const decodeJwtPayload = (token: string): { exp?: number } | null => {
     try {
         const payload = token.split('.')[1];
@@ -46,34 +44,38 @@ export const useAuthStore = create<AuthState>((set) => ({
     isAuthenticated: false,
     isLoading: true,
 
-    setAuth: async (token, refreshToken, user) => {
-        await AsyncStorage.multiSet([
-            ['token', token],
-            ['refreshToken', refreshToken],
-            ['user', JSON.stringify(user)],
-        ]);
+    setAuth: (token, refreshToken, user) => {
+        localStorage.setItem('token', token);
+        localStorage.setItem('refreshToken', refreshToken);
+        localStorage.setItem('user', JSON.stringify(user));
         set({ token, refreshToken, user, isAuthenticated: true, isLoading: false });
     },
 
-    updateUser: async (user) => {
-        await AsyncStorage.setItem('user', JSON.stringify(user));
+    updateUser: (user) => {
+        localStorage.setItem('user', JSON.stringify(user));
         set({ user });
     },
 
-    logout: async () => {
-        await AsyncStorage.multiRemove(['token', 'refreshToken', 'user']);
+    logout: () => {
+        localStorage.removeItem('token');
+        localStorage.removeItem('refreshToken');
+        localStorage.removeItem('user');
         set({ token: null, refreshToken: null, user: null, isAuthenticated: false, isLoading: false });
     },
 
-    checkAuth: async () => {
+    checkAuth: () => {
         try {
-            const [[, token], [, userStr]] = await AsyncStorage.multiGet(['token', 'user']);
+            const token = localStorage.getItem('token');
+            const userStr = localStorage.getItem('user');
 
             if (token && userStr && !isTokenExpired(token)) {
                 set({ token, user: JSON.parse(userStr), isAuthenticated: true, isLoading: false });
             } else {
-                // Token absent ou expiré : nettoyer le stockage
-                if (token) await AsyncStorage.multiRemove(['token', 'refreshToken', 'user']);
+                if (token) {
+                    localStorage.removeItem('token');
+                    localStorage.removeItem('refreshToken');
+                    localStorage.removeItem('user');
+                }
                 set({ isLoading: false });
             }
         } catch {
@@ -81,4 +83,3 @@ export const useAuthStore = create<AuthState>((set) => ({
         }
     },
 }));
-

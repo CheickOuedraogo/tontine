@@ -1,23 +1,22 @@
-import React, { useState, useRef } from 'react';
-import { View, Text, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, TextInput } from 'react-native';
-import { theme } from '../../theme';
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Mail, Lock, Shield } from 'lucide-react';
 import { useAuthStore } from '../../store/useAuthStore';
+import { apiClient } from '../../api/client';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
-import { Mail, Lock, Shield } from 'lucide-react-native';
-import { apiClient } from '../../api/client';
-import { useNavigation } from '@react-navigation/native';
+import './LoginScreen.css';
 
 export const LoginScreen = () => {
     const setAuth = useAuthStore((state) => state.setAuth);
-    const navigation = useNavigation<any>();
+    const navigate = useNavigate();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
-    const passwordRef = useRef<TextInput>(null);
 
-    const handleLogin = async () => {
+    const handleLogin = async (e: React.FormEvent) => {
+        e.preventDefault();
         if (!email.trim() || !password.trim()) {
             setError('Veuillez remplir tous les champs.');
             return;
@@ -32,7 +31,8 @@ export const LoginScreen = () => {
 
             if (response.data.success) {
                 const { accessToken, refreshToken, user } = response.data;
-                await setAuth(accessToken, refreshToken, user);
+                setAuth(accessToken, refreshToken, user);
+                navigate('/');
             } else {
                 setError(response.data.message || 'Identifiants incorrects.');
             }
@@ -45,181 +45,70 @@ export const LoginScreen = () => {
     };
 
     return (
-        <View style={styles.pageContainer}>
-            <KeyboardAvoidingView
-                style={styles.container}
-                behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-            >
-                <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-                    {/* Logo / Brand */}
-                    <View style={styles.header}>
-                        <View style={styles.logoCircle}>
-                            <Shield color={theme.colors.white} size={36} />
-                        </View>
-                        <Text style={styles.title}>TontineFit</Text>
-                        <Text style={styles.subtitle}>Gérez vos tontines en toute sécurité</Text>
-                    </View>
+        <div className="auth-page">
+            <div className="auth-container">
+                <div className="auth-header">
+                    <div className="logo-circle">
+                        <Shield className="logo-icon" size={36} />
+                    </div>
+                    <h1>TontineFit</h1>
+                    <p>Gérez vos tontines en toute sécurité</p>
+                </div>
 
-                    {/* Card */}
-                    <View style={styles.card}>
-                        <Text style={styles.formTitle}>Connexion</Text>
-                        <Text style={styles.formSubtitle}>Accédez à votre espace personnel</Text>
+                <div className="premium-card auth-card">
+                    <h2>Connexion</h2>
+                    <p className="card-subtitle">Accédez à votre espace personnel</p>
 
-                        {error ? (
-                            <View style={styles.errorBanner}>
-                                <Text style={styles.errorBannerText}>{error}</Text>
-                            </View>
-                        ) : null}
+                    {error && (
+                        <div className="error-banner">
+                            <span>{error}</span>
+                        </div>
+                    )}
 
+                    <form onSubmit={handleLogin}>
                         <Input
                             label="Adresse Email"
                             placeholder="votre@email.com"
+                            type="email"
                             value={email}
-                            onChangeText={(text: string) => { setEmail(text); setError(''); }}
-                            keyboardType="email-address"
-                            autoCapitalize="none"
+                            onChange={(e) => { setEmail(e.target.value); setError(''); }}
                             icon={Mail}
-                            returnKeyType="next"
-                            onSubmitEditing={() => passwordRef.current?.focus()}
-                            blurOnSubmit={false}
+                            required
                         />
 
                         <Input
-                            ref={passwordRef}
                             label="Mot de passe"
                             placeholder="••••••••"
+                            type="password"
                             value={password}
-                            onChangeText={(text: string) => { setPassword(text); setError(''); }}
-                            secureTextEntry
+                            onChange={(e) => { setPassword(e.target.value); setError(''); }}
                             icon={Lock}
-                            returnKeyType="done"
-                            onSubmitEditing={handleLogin}
+                            required
                         />
 
                         <Button
                             title="Se Connecter"
-                            onPress={handleLogin}
+                            type="submit"
                             isLoading={isLoading}
-                            style={styles.loginBtn}
+                            className="login-btn"
                         />
+                    </form>
 
-                        <View style={styles.divider}>
-                            <View style={styles.dividerLine} />
-                            <Text style={styles.dividerText}>ou</Text>
-                            <View style={styles.dividerLine} />
-                        </View>
+                    <div className="divider">
+                        <div className="divider-line"></div>
+                        <span>ou</span>
+                        <div className="divider-line"></div>
+                    </div>
 
-                        <Button
-                            title="Créer un compte"
-                            variant="outline"
-                            onPress={() => navigation.navigate('Register')}
-                        />
-                    </View>
+                    <Button
+                        title="Créer un compte"
+                        variant="outline"
+                        onClick={() => navigate('/register')}
+                    />
+                </div>
 
-                    <Text style={styles.footerText}>© 2026 TontineFit — Tous droits réservés</Text>
-                </ScrollView>
-            </KeyboardAvoidingView>
-        </View>
+                <p className="auth-footer">© 2026 TontineFit — Tous droits réservés</p>
+            </div>
+        </div>
     );
 };
-
-const styles = StyleSheet.create({
-    pageContainer: {
-        flex: 1,
-        backgroundColor: '#EEF2FF',
-    },
-    container: {
-        flex: 1,
-        maxWidth: 460,
-        width: '100%',
-        alignSelf: 'center',
-    },
-    scrollContent: {
-        flexGrow: 1,
-        padding: theme.spacing.lg,
-        justifyContent: 'center',
-    },
-    header: {
-        alignItems: 'center',
-        marginBottom: theme.spacing.xl,
-    },
-    logoCircle: {
-        width: 72,
-        height: 72,
-        borderRadius: 36,
-        backgroundColor: theme.colors.primary,
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginBottom: theme.spacing.md,
-    },
-    title: {
-        fontSize: 36,
-        fontWeight: '900',
-        color: theme.colors.primary,
-        letterSpacing: -1,
-    },
-    subtitle: {
-        fontSize: 15,
-        color: theme.colors.textSecondary,
-        textAlign: 'center',
-        marginTop: 4,
-    },
-    card: {
-        backgroundColor: theme.colors.white,
-        padding: theme.spacing.xl,
-        borderRadius: theme.components.borderRadius.xl,
-        boxShadow: '0px 4px 24px rgba(0, 86, 210, 0.10)',
-        elevation: 6,
-    },
-    formTitle: {
-        fontSize: 24,
-        fontWeight: 'bold',
-        color: theme.colors.text,
-        textAlign: 'center',
-    },
-    formSubtitle: {
-        fontSize: 14,
-        color: theme.colors.textSecondary,
-        textAlign: 'center',
-        marginBottom: theme.spacing.lg,
-        marginTop: 4,
-    },
-    errorBanner: {
-        backgroundColor: theme.colors.errorLight,
-        padding: theme.spacing.md,
-        borderRadius: theme.components.borderRadius.md,
-        marginBottom: theme.spacing.md,
-        borderLeftWidth: 4,
-        borderLeftColor: theme.colors.error,
-    },
-    errorBannerText: {
-        color: theme.colors.error,
-        fontSize: 14,
-        fontWeight: '600',
-    },
-    loginBtn: {
-        marginTop: theme.spacing.sm,
-        marginBottom: theme.spacing.md,
-    },
-    divider: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: theme.spacing.md,
-    },
-    dividerLine: {
-        flex: 1,
-        height: 1,
-        backgroundColor: theme.colors.border,
-    },
-    dividerText: {
-        color: theme.colors.textSecondary,
-        paddingHorizontal: theme.spacing.md,
-        fontSize: 13,
-    },
-    footerText: {
-        textAlign: 'center',
-        color: theme.colors.textSecondary,
-        fontSize: 12,
-        marginTop: theme.spacing.xl,
-    }
-});

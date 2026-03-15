@@ -1,0 +1,61 @@
+:root {
+  --primary: #0056D2;
+  --primary-light: #E6F0FF;
+  --primary-dark: #003B8F;
+  --primary-darker: #1E1B4B;
+  --primary-subtle: #EEF2FF;
+  --background: #F8FAFC;
+  --surface: #FFFFFF;
+  --surface-darker: #F1F5F9;
+  --text: #0F172A;
+  --text-secondary: #475569;
+  --border: #E2E8F0;
+  --error: #EF4444;
+  --error-light: #FEE2E2;
+  --success: #10B981;
+  --success-light: #D1FAE5;
+  --warning: #F59E0B;
+  --white: #FFFFFF;
+  
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background-color: #EEF2FF;
+  color: var(--text);
+  line-height: 1.5;
+}
+
+button {
+  cursor: pointer;
+  border: none;
+  background: none;
+  font-family: inherit;
+}
+
+input {
+  font-family: inherit;
+}
+
+.premium-card {
+  background: var(--white);
+  border-radius: var(--radius-xl);
+  box-shadow: 0px 4px 24px rgba(0, 86, 210, 0.10);
+  padding: 24px;
+}
+
+.glass-morphism {
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}

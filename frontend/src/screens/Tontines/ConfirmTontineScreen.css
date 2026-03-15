@@ -1,0 +1,97 @@
+.confirm-tontine-page {
+  animation: fadeIn 0.4s ease-out;
+  max-width: 520px;
+  margin: 0 auto;
+}
+
+.header-icon-main.success {
+  background: var(--success);
+  box-shadow: 0 8px 16px rgba(16, 185, 129, 0.2);
+}
+
+.step-dot.done {
+  background: var(--success);
+}
+
+.step-line.done {
+  background: var(--success);
+}
+
+.confirm-card {
+  padding: 8px;
+}
+
+.info-rows {
+  display: flex;
+  flex-direction: column;
+}
+
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+.info-row:last-child {
+  border-bottom: none;
+}
+
+.info-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.info-icon-bg {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: var(--surface);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.info-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.info-value {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--text);
+}
+
+.trust-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin: 20px 16px;
+  padding: 12px;
+  background: var(--primary-light);
+  border-radius: var(--radius-md);
+  color: var(--primary-dark);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.confirm-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+}
+
+.publish-btn {
+  height: 52px;
+  font-size: 16px;
+}
+
+.modify-btn {
+  height: 52px;
+}

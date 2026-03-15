@@ -1,13 +1,12 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, ScrollView, ActivityIndicator, Alert } from 'react-native';
-import { theme } from '../../theme';
+import { useEffect, useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useContratStore } from '../../store/useContratStore';
 import { useAuthStore } from '../../store/useAuthStore';
 import { contratApi } from '../../api/contrat';
 import { apiClient } from '../../api/client';
 import { Button } from '../../components/ui/Button';
-import { FileText, CheckCircle, AlertCircle, ShieldCheck, FilePlus } from 'lucide-react-native';
-import { useRoute, useNavigation } from '@react-navigation/native';
+import { FileText, CheckCircle, ShieldCheck, FilePlus, ArrowLeft } from 'lucide-react';
+import './ContratScreen.css';
 
 const generateContratText = (tontine: any) => {
     return `CONTRAT D'ENGAGEMENT — TONTINE "${(tontine?.nom || 'N/A').toUpperCase()}"
@@ -37,23 +36,20 @@ Fait sur TontineFit, le ${new Date().toLocaleDateString('fr-FR')}.`;
 };
 
 export const ContratScreen = () => {
-    const route = useRoute<any>();
-    const navigation = useNavigation<any>();
-    const { tontineId } = route.params;
+    const { id: tontineId } = useParams<{ id: string }>();
+    const navigate = useNavigate();
 
-    const { currentContrat, signatures, isLoading, error, fetchContrat, fetchSignatures, signerContrat } = useContratStore();
+    const { currentContrat, signatures, isLoading, fetchContrat, fetchSignatures, signerContrat } = useContratStore();
     const user = useAuthStore(state => state.user);
 
     const [signing, setSigning] = useState(false);
     const [generating, setGenerating] = useState(false);
 
     useEffect(() => {
-        loadData();
+        if (tontineId) {
+            fetchContrat(tontineId);
+        }
     }, [tontineId]);
-
-    const loadData = async () => {
-        await fetchContrat(tontineId);
-    };
 
     useEffect(() => {
         if (currentContrat) {
@@ -64,15 +60,14 @@ export const ContratScreen = () => {
     const handleGenerateContrat = async () => {
         setGenerating(true);
         try {
-            // Fetch tontine details to generate text
             const tontineRes = await apiClient.get(`/tontines/${tontineId}`);
             const tontine = tontineRes.data.tontine || tontineRes.data;
             const texte = generateContratText(tontine);
-            await contratApi.createContrat(tontineId, texte);
-            Alert.alert('Contrat généré ✅', 'Le contrat a été créé avec succès. Les membres peuvent maintenant le signer.');
-            await loadData();
+            await contratApi.createContrat(tontineId!, texte);
+            alert('Le contrat a été créé avec succès. Les membres peuvent maintenant le signer.');
+            await fetchContrat(tontineId!);
         } catch (err: any) {
-            Alert.alert('Erreur', err.response?.data?.message || 'Impossible de générer le contrat.');
+            alert(err.response?.data?.message || 'Impossible de générer le contrat.');
         } finally {
             setGenerating(false);
         }
@@ -81,21 +76,17 @@ export const ContratScreen = () => {
     const hasSigned = signatures.some(sig => sig.userId === user?.id);
 
     const handleSign = async () => {
-        const confirmed = confirm("En signant électroniquement ce document, vous vous engagez à respecter les conditions de la tontine.\n\nCliquez OK pour signer.");
-        if (!confirmed || !currentContrat) return;
+        if (!window.confirm("En signant électroniquement ce document, vous vous engagez à respecter les conditions de la tontine.\n\nCliquez OK pour confirmer votre signature.")) return;
+        if (!currentContrat) return;
 
         setSigning(true);
         try {
             const success = await signerContrat(currentContrat.id);
             if (success) {
-                Alert.alert("Signature enregistrée ✅", "Votre signature a bien été prise en compte.");
-            } else {
-                const storeError = useContratStore.getState().error;
-                Alert.alert("Erreur", storeError || "Impossible de signer le contrat.");
+                alert("Votre signature a bien été prise en compte.");
             }
-        } catch (err: any) {
-            console.error('[ContratScreen] Sign error:', err);
-            Alert.alert("Erreur", "Une erreur est survenue lors de la signature.");
+        } catch (err) {
+            alert("Une erreur est survenue lors de la signature.");
         } finally {
             setSigning(false);
         }
@@ -103,250 +94,100 @@ export const ContratScreen = () => {
 
     if (isLoading && !currentContrat) {
         return (
-            <View style={styles.centerContainer}>
-                <ActivityIndicator size="large" color="#6366F1" />
-            </View>
+            <div className="loading-state full-page">
+                <div className="spinner large"></div>
+                <p>Chargement du contrat...</p>
+            </div>
         );
     }
 
-    // No contract exists — show generation UI
     if (!currentContrat) {
         return (
-            <SafeAreaView style={styles.container}>
-                <View style={styles.centerContainer}>
-                    <View style={styles.emptyIcon}>
-                        <FilePlus color="#6366F1" size={40} />
-                    </View>
-                    <Text style={styles.emptyTitle}>Aucun contrat</Text>
-                    <Text style={styles.emptyText}>
-                        Aucun contrat n'a encore été généré{'\n'}pour cette tontine.
-                    </Text>
-                    <Button
-                        title="Générer le contrat"
-                        onPress={handleGenerateContrat}
-                        isLoading={generating}
-                        style={styles.generateBtn}
-                    />
-                    <Button
-                        title="Retour"
-                        variant="outline"
-                        onPress={() => navigation.goBack()}
-                        style={{ marginTop: 10, borderColor: '#CBD5E1' }}
-                    />
-                </View>
-            </SafeAreaView>
+            <div className="contrat-page empty">
+                <div className="contrat-container center-content">
+                    <div className="empty-icon-circle large">
+                        <FilePlus size={48} />
+                    </div>
+                    <h2>Aucun contrat</h2>
+                    <p>Aucun contrat n'a encore été généré pour cette tontine.</p>
+                    <div className="empty-actions">
+                        <Button
+                            title="Générer le contrat"
+                            onClick={handleGenerateContrat}
+                            isLoading={generating}
+                        />
+                        <Button
+                            title="Retour"
+                            variant="outline"
+                            onClick={() => navigate(-1)}
+                        />
+                    </div>
+                </div>
+            </div>
         );
     }
 
     return (
-        <SafeAreaView style={styles.container}>
-            {/* Header */}
-            <View style={styles.header}>
-                <View style={styles.headerIcon}>
-                    <FileText color="#FFFFFF" size={24} />
-                </View>
-                <Text style={styles.headerTitle}>Contrat d'Engagement</Text>
-            </View>
+        <div className="contrat-page">
+            <header className="details-header contrat-header">
+                <button onClick={() => navigate(-1)} className="back-btn-details inverse">
+                    <ArrowLeft size={20} />
+                </button>
+                <div className="header-titles">
+                    <div className="title-with-icon-header">
+                        <FileText size={20} color="white" />
+                        <h1>Contrat d'Engagement</h1>
+                    </div>
+                    <p className="header-subtitle-web">Document officiel de la tontine</p>
+                </div>
+            </header>
 
-            <ScrollView contentContainerStyle={styles.scrollContent}>
-                {/* Document */}
-                <View style={styles.documentCard}>
-                    <Text style={styles.documentText}>
-                        {currentContrat.texteContrat || "Le texte du contrat devrait apparaître ici."}
-                    </Text>
-                    <Text style={styles.dateInfo}>
-                        Généré le: {new Date(currentContrat.dateCreation).toLocaleDateString('fr-FR')}
-                    </Text>
-                </View>
+            <div className="contrat-content-container">
+                <div className="document-paper premium-card">
+                    <div className="document-ribbon">OFFICIEL</div>
+                    <pre className="contrat-text-web">
+                        {currentContrat.texteContrat}
+                    </pre>
+                    <div className="document-footer">
+                        <p>Généré le: {new Date(currentContrat.dateCreation).toLocaleDateString('fr-FR')}</p>
+                    </div>
+                </div>
 
-                {/* Signatures */}
-                <View style={styles.signaturesCard}>
-                    <Text style={styles.sectionTitle}>Signatures ({signatures.length})</Text>
-                    {signatures.map((sig: any, index: number) => (
-                        <View key={index} style={styles.signatureRow}>
-                            <CheckCircle color="#059669" size={18} />
-                            <Text style={styles.signatureName}>
-                                {sig.prenom ? `${sig.prenom} ${sig.nom}` : `Membre ${sig.userId.substring(0, 8)}...`}
-                            </Text>
-                            <Text style={styles.signatureDate}>
-                                {new Date(sig.dateSignature).toLocaleDateString('fr-FR')}
-                            </Text>
-                        </View>
-                    ))}
-                    {signatures.length === 0 && (
-                        <Text style={styles.noSignatureText}>Aucun membre n'a encore signé.</Text>
+                <div className="signatures-section premium-card">
+                    <h3>Signatures ({signatures.length})</h3>
+                    <div className="signatures-list-web">
+                        {signatures.map((sig, index) => (
+                            <div key={index} className="signature-row-web">
+                                <CheckCircle size={18} color="#059669" />
+                                <div className="sig-info">
+                                    <span className="sig-name">{sig.prenom} {sig.nom}</span>
+                                    <span className="sig-date">{new Date(sig.dateSignature).toLocaleDateString('fr-FR')}</span>
+                                </div>
+                            </div>
+                        ))}
+                        {signatures.length === 0 && (
+                            <p className="no-sigs">En attente des premières signatures...</p>
+                        )}
+                    </div>
+                </div>
+
+                <div className="contrat-actions-bottom">
+                    {!hasSigned ? (
+                        <Button
+                            title="Signer électroniquement"
+                            onClick={handleSign}
+                            isLoading={signing}
+                            icon={ShieldCheck}
+                            className="sign-btn-web"
+                        />
+                    ) : (
+                        <div className="signed-confirmation-web">
+                            <ShieldCheck size={24} />
+                            <span>Vous avez signé ce contrat</span>
+                        </div>
                     )}
-                </View>
-
-                {/* Sign or Signed badge */}
-                {!hasSigned ? (
-                    <Button
-                        title="✍️ Signer électroniquement"
-                        onPress={handleSign}
-                        isLoading={signing}
-                        style={styles.signBtn}
-                    />
-                ) : (
-                    <View style={styles.signedBadge}>
-                        <ShieldCheck color="#059669" size={22} />
-                        <Text style={styles.signedText}>Vous avez signé ce contrat</Text>
-                    </View>
-                )}
-
-                <Button
-                    title="← Retour"
-                    variant="outline"
-                    onPress={() => navigation.goBack()}
-                    style={{ marginTop: 12, borderColor: '#CBD5E1' }}
-                />
-            </ScrollView>
-        </SafeAreaView>
+                </div>
+            </div>
+        </div>
     );
 };
-
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: '#F0F2F8',
-    },
-    centerContainer: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        padding: 32,
-    },
-    emptyIcon: {
-        width: 80,
-        height: 80,
-        borderRadius: 40,
-        backgroundColor: '#E0E7FF',
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginBottom: 16,
-    },
-    emptyTitle: {
-        fontSize: 20,
-        fontWeight: '800',
-        color: '#1E1B4B',
-        marginBottom: 6,
-    },
-    emptyText: {
-        color: '#64748B',
-        fontSize: 14,
-        textAlign: 'center',
-        lineHeight: 20,
-        marginBottom: 24,
-    },
-    generateBtn: {
-        backgroundColor: '#6366F1',
-        borderRadius: 14,
-        paddingHorizontal: 32,
-    },
-    // Header
-    header: {
-        backgroundColor: '#1E1B4B',
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: 18,
-        gap: 10,
-    },
-    headerIcon: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        backgroundColor: '#6366F1',
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    headerTitle: {
-        fontSize: 18,
-        fontWeight: '800',
-        color: '#FFFFFF',
-    },
-    scrollContent: {
-        padding: 16,
-        maxWidth: 600,
-        width: '100%',
-        alignSelf: 'center',
-    },
-    // Document
-    documentCard: {
-        backgroundColor: '#FFFCF0',
-        padding: 24,
-        borderRadius: 16,
-        borderWidth: 1,
-        borderColor: '#E8DEB5',
-        marginBottom: 16,
-        boxShadow: '0px 2px 12px rgba(0,0,0,0.06)',
-        elevation: 3,
-    },
-    documentText: {
-        fontSize: 14,
-        color: '#374151',
-        lineHeight: 22,
-    },
-    dateInfo: {
-        fontSize: 11,
-        color: '#94A3B8',
-        marginTop: 16,
-        textAlign: 'right',
-        fontStyle: 'italic',
-    },
-    // Signatures
-    signaturesCard: {
-        backgroundColor: '#FFFFFF',
-        padding: 20,
-        borderRadius: 16,
-        marginBottom: 16,
-        boxShadow: '0px 2px 12px rgba(0,0,0,0.06)',
-        elevation: 3,
-    },
-    sectionTitle: {
-        fontSize: 16,
-        fontWeight: '700',
-        color: '#1E1B4B',
-        marginBottom: 12,
-    },
-    signatureRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingVertical: 10,
-        borderBottomWidth: 1,
-        borderBottomColor: '#F1F5F9',
-        gap: 8,
-    },
-    signatureName: {
-        flex: 1,
-        fontSize: 14,
-        color: '#374151',
-        fontWeight: '600',
-    },
-    signatureDate: {
-        fontSize: 12,
-        color: '#94A3B8',
-    },
-    noSignatureText: {
-        color: '#94A3B8',
-        fontStyle: 'italic',
-        fontSize: 13,
-    },
-    signBtn: {
-        backgroundColor: '#6366F1',
-        borderRadius: 14,
-    },
-    signedBadge: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: '#D1FAE5',
-        padding: 14,
-        borderRadius: 14,
-        gap: 8,
-    },
-    signedText: {
-        color: '#059669',
-        fontWeight: '700',
-        fontSize: 15,
-    },
-});
