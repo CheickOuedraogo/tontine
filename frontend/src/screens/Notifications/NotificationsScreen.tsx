@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useModal } from '../../context/ModalContext';
+import { useNotificationStore } from '../../store/useNotificationStore';
 import { apiClient } from '../../api/client';
-import { Bell, Info, AlertTriangle, CheckCircle, Clock, Wallet, UserPlus, ArrowLeft } from 'lucide-react';
+import { Bell, Info, AlertTriangle, CheckCircle, Clock, Wallet, UserPlus, ArrowLeft, Trash2, Trash } from 'lucide-react';
 import './NotificationsScreen.css';
 
 const ICON_MAP: Record<string, { icon: any; color: string; bg: string }> = {
@@ -19,41 +20,18 @@ const ICON_MAP: Record<string, { icon: any; color: string; bg: string }> = {
 
 export const NotificationsScreen = () => {
     const navigate = useNavigate();
-    const { showAlert } = useModal();
-    const [notifications, setNotifications] = useState<any[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
+    const { showAlert, showConfirm } = useModal();
+    const { notifications, isLoading, fetchNotifications, markAsRead, deleteNotification, clearAllNotifications } = useNotificationStore();
     const [actionLoading, setActionLoading] = useState<string | null>(null);
 
-    const loadNotifications = async () => {
-        setIsLoading(true);
-        try {
-            const res = await apiClient.get('/notifications');
-            setNotifications(res.data.notifications || []);
-        } catch (err) {
-            showAlert('Erreur', 'Impossible de charger les notifications.', 'error');
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    const markAsRead = async (notificationId: string) => {
-        try {
-            await apiClient.post(`/notifications/${notificationId}/read`);
-            setNotifications(prev => prev.map(n => n.id === notificationId ? { ...n, estLue: true } : n));
-        } catch (err) {
-            showAlert('Erreur', 'Impossible de marquer la notification comme lue.', 'error');
-        }
-    };
-
     useEffect(() => {
-        loadNotifications();
-    }, []);
+        fetchNotifications();
+    }, [fetchNotifications]);
 
     const handleInvitationAction = async (notif: any, action: 'accepter' | 'refuser') => {
-        // Extract invitation ID from lienAction: "/invitations/{id}/repondre"
         const match = notif.lienAction?.match(/\/invitations\/([^/]+)/);
         if (!match) {
-            showAlert('Erreur', 'Impossible de traiter cette invitation.', 'error');
+            showAlert('Erreur', 'Impossible de traiter cette invitation.');
             return;
         }
         const invitationId = match[1];
@@ -61,27 +39,55 @@ export const NotificationsScreen = () => {
         try {
             await apiClient.post(`/invitations/${invitationId}/${action}`);
             await markAsRead(notif.id);
-            showAlert('Succès', action === 'accepter' ? 'Vous avez rejoint la tontine !' : 'Invitation refusée.', 'success');
-            loadNotifications();
+            showAlert('Succès', action === 'accepter' ? 'Vous avez rejoint la tontine !' : 'Invitation refusée.');
+            fetchNotifications();
         } catch (err: any) {
-            showAlert('Erreur', err.response?.data?.message || 'Une erreur est survenue.', 'error');
+            showAlert('Erreur', err.response?.data?.message || 'Une erreur est survenue.');
         } finally {
             setActionLoading(null);
         }
     };
 
+    const handleClearAll = () => {
+        showConfirm(
+            'Tout effacer ?',
+            'Voulez-vous vraiment supprimer toutes vos notifications ? Cette action est irréversible.',
+            async () => {
+                await clearAllNotifications();
+            }
+        );
+    };
+
+    const handleDelete = async (e: React.MouseEvent, id: string) => {
+        e.stopPropagation();
+        await deleteNotification(id);
+    };
+
+    const unreadCount = notifications.filter((n: any) => !(n.lu || n.estLue)).length;
+
     return (
         <div className="notifications-page">
             <header className="details-header notifications-header">
-                <button onClick={() => navigate(-1)} className="back-btn-details">
-                    <ArrowLeft size={20} />
-                </button>
-                <div className="header-titles">
-                    <h1>Alertes & Notifications</h1>
-                    <span className="status-pill">
-                        {notifications.filter((n: any) => !n.estLue).length} non lue(s)
-                    </span>
+                <div className="header-left-group">
+                    <button onClick={() => navigate(-1)} className="back-btn-details">
+                        <ArrowLeft size={20} />
+                    </button>
+                    <div className="header-titles">
+                        <h1>Alertes & Notifications</h1>
+                        {notifications.length > 0 && (
+                            <span className="status-pill">
+                                {unreadCount} non lue(s)
+                            </span>
+                        )}
+                    </div>
                 </div>
+                
+                {notifications.length > 0 && (
+                    <button className="clear-all-btn" onClick={handleClearAll}>
+                        <Trash2 size={16} />
+                        <span>Tout effacer</span>
+                    </button>
+                )}
             </header>
 
             <div className="notifications-container">
@@ -95,20 +101,30 @@ export const NotificationsScreen = () => {
                         {notifications.map((item: any) => {
                             const config = ICON_MAP[item.type] || ICON_MAP.DEFAULT;
                             const IconComponent = config.icon;
-                            const isInvitation = item.type === 'INVITATION_TONTINE' && !item.estLue;
+                            const isLue = item.lu || item.estLue;
+                            const isInvitation = item.type === 'INVITATION_TONTINE' && !isLue;
 
                             return (
                                 <div
                                     key={item.id}
-                                    className={`notification-card premium-card ${!item.estLue ? 'unread' : ''}`}
-                                    onClick={() => !isInvitation && !item.estLue && markAsRead(item.id)}
+                                    className={`notification-card premium-card ${!isLue ? 'unread' : ''}`}
+                                    onClick={() => !isInvitation && !isLue && markAsRead(item.id)}
                                 >
                                     <div className="notif-icon-circle" style={{ backgroundColor: config.bg }}>
                                         <IconComponent color={config.color} size={20} />
                                     </div>
                                     <div className="notif-content">
-                                        <h3 className={!item.estLue ? 'unread-title' : ''}>{item.titre}</h3>
-                                        <p className="notif-message">{item.contenu}</p>
+                                        <div className="notif-header-row">
+                                            <h3 className={!isLue ? 'unread-title' : ''}>{item.titre}</h3>
+                                            <button 
+                                                className="delete-notif-btn" 
+                                                onClick={(e) => handleDelete(e, item.id)}
+                                                title="Supprimer"
+                                            >
+                                                <Trash size={14} />
+                                            </button>
+                                        </div>
+                                        <p className="notif-message">{item.contenu || item.message}</p>
                                         <span className="notif-date">
                                             {new Date(item.dateCreation).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })} à {new Date(item.dateCreation).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
                                         </span>
@@ -133,7 +149,7 @@ export const NotificationsScreen = () => {
                                             </div>
                                         )}
                                     </div>
-                                    {!item.estLue && !isInvitation && <div className="unread-dot-notif" />}
+                                    {!isLue && !isInvitation && <div className="unread-dot-notif" />}
                                 </div>
                             );
                         })}

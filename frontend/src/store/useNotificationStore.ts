@@ -9,6 +9,8 @@ interface NotificationState {
     fetchNotifications: () => Promise<void>;
     markAsRead: (id: string) => Promise<void>;
     fetchUnreadCount: () => Promise<void>;
+    deleteNotification: (id: string) => Promise<void>;
+    clearAllNotifications: () => Promise<void>;
 }
 
 export const useNotificationStore = create<NotificationState>((set, get) => ({
@@ -48,6 +50,27 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
             const notifs = await notificationApi.getNotifications();
             set({ unreadCount: Array.isArray(notifs) ? notifs.filter(n => !n.lu).length : 0 });
         } catch {
+            // silent fail
+        }
+    },
+
+    deleteNotification: async (id: string) => {
+        try {
+            await notificationApi.deleteNotification(id);
+            const updatedNotifs = get().notifications.filter(n => n.id !== id);
+            const wasUnread = get().notifications.find(n => n.id === id && !n.lu);
+            const newCount = wasUnread ? Math.max(0, get().unreadCount - 1) : get().unreadCount;
+            set({ notifications: updatedNotifs, unreadCount: newCount });
+        } catch (e) {
+            // silent fail
+        }
+    },
+
+    clearAllNotifications: async () => {
+        try {
+            await notificationApi.clearAll();
+            set({ notifications: [], unreadCount: 0 });
+        } catch (e) {
             // silent fail
         }
     }

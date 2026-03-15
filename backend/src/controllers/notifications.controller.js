@@ -21,4 +21,17 @@ const getUnreadCount = asyncHandler(async (req, res) => {
   res.json({ success: true, count });
 });
 
-module.exports = { getNotifications, marquerCommeLue, getUnreadCount };
+// DELETE /api/notifications/:notificationId
+const supprimerNotification = asyncHandler(async (req, res) => {
+  const { notificationId } = req.params;
+  await notifQ.deleteById(notificationId, req.user.id);
+  res.json({ success: true, message: 'Notification supprimee' });
+});
+
+// DELETE /api/notifications
+const toutEffacer = asyncHandler(async (req, res) => {
+  await notifQ.deleteAllByUser(req.user.id);
+  res.json({ success: true, message: 'Toutes les notifications ont ete effacees' });
+});
+
+module.exports = { getNotifications, marquerCommeLue, getUnreadCount, supprimerNotification, toutEffacer };

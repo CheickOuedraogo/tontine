@@ -1,4 +1,4 @@
-﻿const db = require('../config/db');
+const db = require('../config/db');
 
 // findByUser(userId: string, page: number, limit: number) => Promise<Notification[]>
 const findByUser = async (userId, page = 1, limit = 20) => {
@@ -34,4 +34,14 @@ const countUnread = async (userId) => {
   return parseInt(rows[0].count);
 };
 
-module.exports = { findByUser, create, markAsRead, countUnread };
+// deleteById(id: string, userId: string) => Promise<void>
+const deleteById = async (id, userId) => {
+  await db.query(`DELETE FROM "Notification" WHERE id=$1 AND "userId"=$2`, [id, userId]);
+};
+
+// deleteAllByUser(userId: string) => Promise<void>
+const deleteAllByUser = async (userId) => {
+  await db.query(`DELETE FROM "Notification" WHERE "userId"=$1`, [userId]);
+};
+
+module.exports = { findByUser, create, markAsRead, countUnread, deleteById, deleteAllByUser };

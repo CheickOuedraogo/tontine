@@ -16,11 +16,19 @@ export const notificationApi = {
         return response.data.notifications;
     },
     markAsRead: async (id: string) => {
-        const response = await apiClient.put<{ success: boolean; message: string }>(`/notifications/${id}/read`);
+        const response = await apiClient.put<{ success: boolean; message: string }>(`/notifications/${id}/lire`);
         return response.data;
     },
     markAllAsRead: async () => {
         const response = await apiClient.put<{ success: boolean; message: string }>('/notifications/read-all');
+        return response.data;
+    },
+    deleteNotification: async (id: string) => {
+        const response = await apiClient.delete<{ success: boolean; message: string }>(`/notifications/${id}`);
+        return response.data;
+    },
+    clearAll: async () => {
+        const response = await apiClient.delete<{ success: boolean; message: string }>('/notifications');
         return response.data;
     }
 };
