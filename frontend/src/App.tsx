@@ -11,16 +11,15 @@ import { TontineDetailsScreen } from './screens/Tontines/TontineDetailsScreen';
 import { CreateTontineScreen } from './screens/Tontines/CreateTontineScreen';
 import { ExploreScreen } from './screens/Tontines/ExploreScreen';
 import { ConfirmTontineScreen } from './screens/Tontines/ConfirmTontineScreen';
-import { InviteMembersScreen } from './screens/Tontines/InviteMembersScreen';
-import { ContratScreen } from './screens/Tontines/ContratScreen';
+import InviteMembersScreen from './screens/Tontines/InviteMembersScreen';
 import { PaymentHistoryScreen } from './screens/Tontines/PaymentHistoryScreen';
 import { DistributionScreen } from './screens/Tontines/DistributionScreen';
-import { AdminTontineScreen } from './screens/Tontines/AdminTontineScreen';
 import { ProfileScreen } from './screens/Profile/ProfileScreen';
 import { StatistiquesCotisationsScreen } from './screens/Cotisations/StatistiquesCotisationsScreen';
 import { CotisationsScreen } from './screens/Cotisations/CotisationsScreen';
 import { NotificationsScreen } from './screens/Notifications/NotificationsScreen';
 import { ChatScreen } from './screens/Chat/ChatScreen';
+import { ModalProvider } from './context/ModalContext';
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { isAuthenticated, isLoading, checkAuth } = useAuthStore();
@@ -37,7 +36,8 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 
 function App() {
   return (
-    <BrowserRouter>
+    <ModalProvider>
+      <BrowserRouter>
       <Routes>
         <Route path="/login" element={<LoginScreen />} />
         <Route path="/register" element={<RegisterScreen />} />
@@ -90,14 +90,6 @@ function App() {
           </ProtectedRoute>
         } />
 
-        <Route path="/tontines/:id/contrat" element={
-          <ProtectedRoute>
-            <Layout>
-              <ContratScreen />
-            </Layout>
-          </ProtectedRoute>
-        } />
-
         <Route path="/tontines/:id/payments" element={
           <ProtectedRoute>
             <Layout>
@@ -110,14 +102,6 @@ function App() {
           <ProtectedRoute>
             <Layout>
               <DistributionScreen />
-            </Layout>
-          </ProtectedRoute>
-        } />
-
-        <Route path="/tontines/:id/admin" element={
-          <ProtectedRoute>
-            <Layout>
-              <AdminTontineScreen />
             </Layout>
           </ProtectedRoute>
         } />
@@ -165,6 +149,7 @@ function App() {
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
     </BrowserRouter>
+    </ModalProvider>
   );
 }
 

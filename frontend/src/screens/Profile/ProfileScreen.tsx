@@ -1,13 +1,17 @@
 import { useState, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useModal } from '../../context/ModalContext';
 import { useAuthStore } from '../../store/useAuthStore';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
-import { User, Mail, Phone, Camera, CheckCircle, AlertCircle } from 'lucide-react';
+import { User, Mail, Phone, Camera, CheckCircle, AlertCircle, ArrowLeft } from 'lucide-react';
 import { apiClient } from '../../api/client';
 import { SOCKET_URL } from '../../constants';
 import './ProfileScreen.css';
 
 export const ProfileScreen = () => {
+    const navigate = useNavigate();
+    const { showConfirm } = useModal();
     const user = useAuthStore(state => state.user);
     const logout = useAuthStore(state => state.logout);
     const token = useAuthStore(state => state.token);
@@ -76,14 +80,27 @@ export const ProfileScreen = () => {
         }
     };
 
-    const handleLogout = () => {
-        if (window.confirm('Êtes-vous sûr de vouloir vous déconnecter ?')) {
+    const handleLogout = async () => {
+        const confirmed = await showConfirm(
+            'Déconnexion',
+            'Êtes-vous sûr de vouloir vous déconnecter ?'
+        );
+        if (confirmed) {
             logout();
+            navigate('/login');
         }
     };
 
     return (
         <div className="profile-page">
+            <header className="profile-header">
+                <button onClick={() => navigate(-1)} className="back-btn-details">
+                    <ArrowLeft size={20} />
+                </button>
+                <div className="header-titles">
+                    <h1>Mon Profil</h1>
+                </div>
+            </header>
             <div className="profile-container">
                 <header className="profile-card profile-header-premium premium-card">
                     <div className="avatar-upload-section">

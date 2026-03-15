@@ -2,6 +2,11 @@
   animation: fadeIn 0.4s ease-out;
 }
 
+.stats-header {
+  background: transparent;
+  padding: 10px 0;
+}
+
 
 
 .filters-row-web {

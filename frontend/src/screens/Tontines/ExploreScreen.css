@@ -3,10 +3,11 @@
 }
 
 .explore-header {
-  background: var(--primary-darker);
+  background: transparent;
   display: flex;
   align-items: center;
   gap: 16px;
+  padding: 10px 0;
 }
 
 .explore-header-icon {

@@ -2,6 +2,15 @@
   animation: fadeIn 0.4s ease-out;
 }
 
+.notifications-header {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  margin-bottom: 32px;
+  padding: 10px 0;
+  background: transparent;
+}
+
 .notifications-container {
   max-width: 600px;
   margin: 0 auto;

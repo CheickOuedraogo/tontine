@@ -81,7 +81,7 @@ const validerIdentite = asyncHandler(async (req, res) => {
         participation.userId,
         'IDENTITE_VALIDEE',
         'Identité validée',
-        `Votre identité a été validée pour la tontine ${tontine.nom}. Vous pouvez maintenant signer le contrat.`,
+        `Votre identité a été validée pour la tontine ${tontine.nom}.`,
         `/tontines/${tontine.id}`
       ]
     );

@@ -1,4 +1,4 @@
-﻿const db = require('../config/db');
+const db = require('../config/db');
 
 // findById(id: string) => Promise<Tontine | null>
 const findById = async (id) => {
@@ -88,7 +88,6 @@ const deleteTontine = async (id) => {
     await client.query(`DELETE FROM "Message" WHERE "tontineId"=$1`, [id]);
     await client.query(`DELETE FROM "Cotisation" WHERE "tontineId"=$1`, [id]);
     await client.query(`DELETE FROM "Distribution" WHERE "tontineId"=$1`, [id]);
-    await client.query(`DELETE FROM "Contrat" WHERE "tontineId"=$1`, [id]);
     await client.query(`DELETE FROM "Invitation" WHERE "tontineId"=$1`, [id]);
     await client.query(`DELETE FROM "Participation" WHERE "tontineId"=$1`, [id]);
     await client.query(`DELETE FROM "Tontine" WHERE id=$1`, [id]);

@@ -2,6 +2,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useTontineStore } from '../../store/useTontineStore';
 import { Button } from '../../components/ui/Button';
 import { FileCheck, Users, Calendar, Wallet, ShieldCheck, ChevronLeft } from 'lucide-react';
+import { useModal } from '../../context/ModalContext';
 import './ConfirmTontineScreen.css';
 
 export const ConfirmTontineScreen = () => {
@@ -9,6 +10,7 @@ export const ConfirmTontineScreen = () => {
     const location = useLocation();
     const { tontineData } = (location.state as any) || { tontineData: {} };
     
+    const { showAlert } = useModal();
     const { createTontine, isLoading, fetchMyTontines, error } = useTontineStore();
 
     const handlePublish = async () => {
@@ -17,7 +19,7 @@ export const ConfirmTontineScreen = () => {
             await fetchMyTontines();
             navigate('/');
         } else {
-            alert('Erreur: ' + (error || 'Impossible de créer la tontine.'));
+            showAlert('Erreur', error || 'Impossible de créer la tontine.', 'error');
         }
     };
 

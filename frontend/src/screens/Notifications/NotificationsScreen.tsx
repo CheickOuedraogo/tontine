@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
-import { useNotificationStore } from '../../store/useNotificationStore';
+import { useNavigate } from 'react-router-dom';
+import { useModal } from '../../context/ModalContext';
 import { apiClient } from '../../api/client';
-import { Bell, Info, AlertTriangle, CheckCircle, Clock, Wallet, UserPlus } from 'lucide-react';
+import { Bell, Info, AlertTriangle, CheckCircle, Clock, Wallet, UserPlus, ArrowLeft } from 'lucide-react';
 import './NotificationsScreen.css';
 
 const ICON_MAP: Record<string, { icon: any; color: string; bg: string }> = {
@@ -17,18 +18,42 @@ const ICON_MAP: Record<string, { icon: any; color: string; bg: string }> = {
 };
 
 export const NotificationsScreen = () => {
-    const { notifications, isLoading, fetchNotifications, markAsRead } = useNotificationStore();
+    const navigate = useNavigate();
+    const { showAlert } = useModal();
+    const [notifications, setNotifications] = useState<any[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
     const [actionLoading, setActionLoading] = useState<string | null>(null);
 
+    const loadNotifications = async () => {
+        setIsLoading(true);
+        try {
+            const res = await apiClient.get('/notifications');
+            setNotifications(res.data.notifications || []);
+        } catch (err) {
+            showAlert('Erreur', 'Impossible de charger les notifications.', 'error');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const markAsRead = async (notificationId: string) => {
+        try {
+            await apiClient.post(`/notifications/${notificationId}/read`);
+            setNotifications(prev => prev.map(n => n.id === notificationId ? { ...n, estLue: true } : n));
+        } catch (err) {
+            showAlert('Erreur', 'Impossible de marquer la notification comme lue.', 'error');
+        }
+    };
+
     useEffect(() => {
-        fetchNotifications();
-    }, [fetchNotifications]);
+        loadNotifications();
+    }, []);
 
     const handleInvitationAction = async (notif: any, action: 'accepter' | 'refuser') => {
         // Extract invitation ID from lienAction: "/invitations/{id}/repondre"
         const match = notif.lienAction?.match(/\/invitations\/([^/]+)/);
         if (!match) {
-            alert('Erreur: Impossible de traiter cette invitation.');
+            showAlert('Erreur', 'Impossible de traiter cette invitation.', 'error');
             return;
         }
         const invitationId = match[1];
@@ -36,10 +61,10 @@ export const NotificationsScreen = () => {
         try {
             await apiClient.post(`/invitations/${invitationId}/${action}`);
             await markAsRead(notif.id);
-            alert(action === 'accepter' ? 'Vous avez rejoint la tontine !' : 'Invitation refusée.');
-            fetchNotifications();
+            showAlert('Succès', action === 'accepter' ? 'Vous avez rejoint la tontine !' : 'Invitation refusée.', 'success');
+            loadNotifications();
         } catch (err: any) {
-            alert('Erreur: ' + (err.response?.data?.message || 'Une erreur est survenue.'));
+            showAlert('Erreur', err.response?.data?.message || 'Une erreur est survenue.', 'error');
         } finally {
             setActionLoading(null);
         }
@@ -47,10 +72,10 @@ export const NotificationsScreen = () => {
 
     return (
         <div className="notifications-page">
-            <header className="details-header">
-                <div className="header-icon-circle">
-                    <Bell size={20} color="white" />
-                </div>
+            <header className="details-header notifications-header">
+                <button onClick={() => navigate(-1)} className="back-btn-details">
+                    <ArrowLeft size={20} />
+                </button>
                 <div className="header-titles">
                     <h1>Alertes & Notifications</h1>
                     <span className="status-pill">

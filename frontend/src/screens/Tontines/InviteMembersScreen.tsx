@@ -7,9 +7,12 @@ import { apiClient } from '../../api/client';
 import { useAuthStore } from '../../store/useAuthStore';
 import './InviteMembersScreen.css';
 
+import { useModal } from '../../context/ModalContext';
+
 export const InviteMembersScreen = () => {
     const { id: tontineId } = useParams<{ id: string }>();
     const navigate = useNavigate();
+    const { showAlert } = useModal();
     const currentUser = useAuthStore(state => state.user);
 
     const [email, setEmail] = useState('');
@@ -57,7 +60,7 @@ export const InviteMembersScreen = () => {
             await apiClient.post(`/invitations/tontine/${tontineId}`, {
                 emailInvite: email.trim(),
             });
-            alert(`Invitation envoyée à ${email.trim()} ! L'utilisateur recevra une notification.`);
+            showAlert('Succès', `Invitation envoyée à ${email.trim()} !`, 'success');
             setEmail('');
             loadInvitations();
         } catch (err: any) {
@@ -175,3 +178,5 @@ export const InviteMembersScreen = () => {
         </div>
     );
 };
+
+export default InviteMembersScreen;

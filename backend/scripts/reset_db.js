@@ -12,8 +12,6 @@ const resetDb = async () => {
         const tables = [
             'Notification',
             'Message',
-            'SignatureContrat',
-            'Contrat',
             'Distribution',
             'Cotisation',
             'Participation',

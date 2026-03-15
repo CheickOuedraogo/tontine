@@ -3,10 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import { FilePlus, ChevronLeft } from 'lucide-react';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
+import { useModal } from '../../context/ModalContext';
 import './CreateTontineScreen.css';
 
 export const CreateTontineScreen = () => {
     const navigate = useNavigate();
+    const { showAlert } = useModal();
     
     const [nom, setNom] = useState('');
     const [montantCotisation, setMontantCotisation] = useState('');
@@ -16,7 +18,7 @@ export const CreateTontineScreen = () => {
     const handleContinue = (e: React.FormEvent) => {
         e.preventDefault();
         if (!nom || !montantCotisation || !intervalleJours || !nbMembresAttendu) {
-            alert('Veuillez remplir tous les champs pour continuer.');
+            showAlert('Formulaire incomplet', 'Veuillez remplir tous les champs pour continuer.', 'info');
             return;
         }
 

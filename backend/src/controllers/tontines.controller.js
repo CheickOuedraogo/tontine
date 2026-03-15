@@ -60,17 +60,6 @@ const startTontine = asyncHandler(async (req, res) => {
     throw new ApiError(400, 'Il faut au moins 2 membres pour démarrer une tontine');
   }
   
-  // Vérifier que tous les membres ont signé le contrat (si un contrat existe)
-  const { rows: contrats } = await db.query(
-    `SELECT id FROM "Contrat" WHERE "tontineId"=$1`, [tontineId]
-  );
-  
-  if (contrats.length > 0) {
-    const membresNonSignes = membres.filter(m => !m.aSigneContrat);
-    if (membresNonSignes.length > 0) {
-      throw new ApiError(400, `${membresNonSignes.length} membre(s) n'ont pas encore signé le contrat`);
-    }
-  }
   
   // Vérifier si un ordre manuel a été défini
   const hasManualOrder = membres.every(m => m.ordreDistribution !== null && m.ordreDistribution !== undefined);

@@ -61,18 +61,32 @@ const payerCotisation = asyncHandler(async (req, res) => {
   const { cotisationId } = req.params;
   const { simulationRef } = req.body;
   
+  // Vérifier l'ordre séquentiel
+  const { rows: currentRows } = await db.query('SELECT * FROM "Cotisation" WHERE id = $1', [cotisationId]);
+  if (!currentRows[0]) throw new ApiError(404, 'Cotisation introuvable');
+  
+  const current = currentRows[0];
+  if (current.cycleNumero > 1) {
+    const { rows: previousUnpaid } = await db.query(
+      'SELECT id FROM "Cotisation" WHERE "participationId" = $1 AND "cycleNumero" < $2 AND statut != \'PAYEE\' LIMIT 1',
+      [current.participationId, current.cycleNumero]
+    );
+    if (previousUnpaid.length > 0) {
+      throw new ApiError(400, 'Vous devez payer vos tours précédents avant de payer celui-ci.');
+    }
+  }
+
   const cotisation = await cotisationQ.payer(cotisationId, simulationRef);
   
   const allPaid = await cotisationQ.allPaidForCycle(cotisation.tontineId, cotisation.cycleNumero);
   if (allPaid) {
-    // Mettre à jour la distribution existante en EFFECTUEE
+// ... existing distribution update logic ...
     await db.query(
       `UPDATE "Distribution" SET statut='EFFECTUEE', "dateEffective"=NOW()
        WHERE "tontineId"=$1 AND "cycleNumero"=$2 AND statut='PLANIFIEE'`,
       [cotisation.tontineId, cotisation.cycleNumero]
     );
     
-    // Récupérer la distribution pour notifier le bénéficiaire
     const { rows: distRows } = await db.query(
       `SELECT d.*, u.nom, u.prenom FROM "Distribution" d
        JOIN "User" u ON u.id = d."beneficiaireId"
@@ -99,6 +113,21 @@ const simulerPaiement = asyncHandler(async (req, res) => {
   const { cotisationId } = req.params;
   const { operateur } = req.body;
   
+  // Vérifier l'ordre séquentiel
+  const { rows: currentRows } = await db.query('SELECT * FROM "Cotisation" WHERE id = $1', [cotisationId]);
+  if (!currentRows[0]) throw new ApiError(404, 'Cotisation introuvable');
+  
+  const current = currentRows[0];
+  if (current.cycleNumero > 1) {
+    const { rows: previousUnpaid } = await db.query(
+      'SELECT id FROM "Cotisation" WHERE "participationId" = $1 AND "cycleNumero" < $2 AND statut != \'PAYEE\' LIMIT 1',
+      [current.participationId, current.cycleNumero]
+    );
+    if (previousUnpaid.length > 0) {
+      throw new ApiError(400, 'Vous devez payer vos tours précédents avant de payer celui-ci.');
+    }
+  }
+
   const simulationRef = `SIM-${Date.now()}-${Math.random().toString(36).substring(7).toUpperCase()}`;
   
   // Valider l'opérateur
@@ -111,14 +140,13 @@ const simulerPaiement = asyncHandler(async (req, res) => {
   
   const allPaid = await cotisationQ.allPaidForCycle(cotisation.tontineId, cotisation.cycleNumero);
   if (allPaid) {
-    // Mettre à jour la distribution existante en EFFECTUEE
+// ... existing distribution update logic ...
     await db.query(
       `UPDATE "Distribution" SET statut='EFFECTUEE', "dateEffective"=NOW()
        WHERE "tontineId"=$1 AND "cycleNumero"=$2 AND statut='PLANIFIEE'`,
       [cotisation.tontineId, cotisation.cycleNumero]
     );
     
-    // Récupérer la distribution pour notifier le bénéficiaire
     const { rows: distRows } = await db.query(
       `SELECT d.*, u.nom, u.prenom FROM "Distribution" d
        JOIN "User" u ON u.id = d."beneficiaireId"

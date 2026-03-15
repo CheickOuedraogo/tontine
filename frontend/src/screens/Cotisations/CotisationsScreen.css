@@ -3,7 +3,9 @@
 }
 
 .cotisations-header {
-  color: white;
+  background: transparent;
+  color: var(--text);
+  padding: 10px 0;
 }
 
 

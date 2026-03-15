@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useModal } from '../../context/ModalContext';
 import { apiClient } from '../../api/client';
 import { useTontineStore } from '../../store/useTontineStore';
-import { Search, Users, Wallet, Calendar, Globe, UserPlus, FileText, X } from 'lucide-react';
+import { Search, Users, Wallet, Calendar, Globe, UserPlus } from 'lucide-react';
 import './ExploreScreen.css';
 
 interface OpenTontine {
@@ -28,17 +29,12 @@ const FREQ_FR: Record<string, string> = {
 
 export const ExploreScreen = () => {
     const navigate = useNavigate();
+    const { showAlert, showConfirm } = useModal();
     const { fetchMyTontines } = useTontineStore();
     const [tontines, setTontines] = useState<OpenTontine[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-
-    // Contract modal state
-    const [showContract, setShowContract] = useState(false);
-    const [contractText, setContractText] = useState('');
-    const [contractLoading, setContractLoading] = useState(false);
-    const [selectedTontine, setSelectedTontine] = useState<OpenTontine | null>(null);
-    const [accepted, setAccepted] = useState(false);
     const [joining, setJoining] = useState(false);
+    const [selectedTontine, setSelectedTontine] = useState<OpenTontine | null>(null);
 
     useEffect(() => {
         loadOpen();
@@ -57,36 +53,25 @@ export const ExploreScreen = () => {
         }
     };
 
-    const handleShowContract = async (tontine: OpenTontine) => {
-        setSelectedTontine(tontine);
-        setAccepted(false);
-        setContractLoading(true);
-        setShowContract(true);
+    const handleJoin = async (tontine: OpenTontine) => {
+        const confirmed = await showConfirm(
+            'Rejoindre la tontine',
+            `Voulez-vous vraiment rejoindre la tontine "${tontine.nom}" ?`
+        );
+        if (!confirmed) return;
 
-        try {
-            const res = await apiClient.get(`/contrats/tontine/${tontine.id}/preview`);
-            const contrat = res.data.contrat;
-            setContractText(contrat?.texteContrat || '');
-        } catch {
-            setContractText('');
-        } finally {
-            setContractLoading(false);
-        }
-    };
-
-    const handleConfirmJoin = async () => {
-        if (!selectedTontine || !accepted) return;
         setJoining(true);
+        setSelectedTontine(tontine);
         try {
-            await apiClient.post(`/tontines/${selectedTontine.id}/join`);
-            setShowContract(false);
+            await apiClient.post(`/tontines/${tontine.id}/join`);
             fetchMyTontines();
-            alert('🎉 Vous avez rejoint la tontine !');
-            navigate(`/tontines/${selectedTontine.id}`);
+            showAlert('Félicitations !', '🎉 Vous avez rejoint la tontine !', 'success');
+            navigate(`/tontines/${tontine.id}`);
         } catch (err: any) {
-            alert('❌ ' + (err.response?.data?.message || 'Impossible de rejoindre cette tontine.'));
+            showAlert('Erreur', err.response?.data?.message || 'Impossible de rejoindre cette tontine.', 'error');
         } finally {
             setJoining(false);
+            setSelectedTontine(null);
         }
     };
 
@@ -153,9 +138,13 @@ export const ExploreScreen = () => {
                                                     Déjà membre
                                                 </button>
                                             ) : (
-                                                <button className="e-btn join" onClick={() => handleShowContract(item)}>
+                                                <button 
+                                                    className="e-btn join" 
+                                                    onClick={() => handleJoin(item)} 
+                                                    disabled={joining && selectedTontine?.id === item.id}
+                                                >
                                                     <UserPlus size={18} />
-                                                    Rejoindre
+                                                    {joining && selectedTontine?.id === item.id ? 'Traitement...' : 'Rejoindre'}
                                                 </button>
                                             )}
                                         </div>
@@ -179,57 +168,6 @@ export const ExploreScreen = () => {
                     </div>
                 )}
             </div>
-
-            {showContract && (
-                <div className="modal-overlay-web">
-                    <div className="modal-container-web premium-card">
-                        <div className="modal-header-web">
-                            <FileText size={20} color="var(--primary)" />
-                            <h3>Termes du Contrat</h3>
-                            <button className="modal-close-btn" onClick={() => setShowContract(false)}>
-                                <X size={20} />
-                            </button>
-                        </div>
-
-                        <div className="modal-body-web">
-                            <p className="modal-tontine-name">{selectedTontine?.nom}</p>
-                            <div className="modal-scroll-area">
-                                {contractLoading ? (
-                                    <div className="loading-state">
-                                        <div className="spinner"></div>
-                                    </div>
-                                ) : contractText ? (
-                                    <pre className="modal-contract-text">{contractText}</pre>
-                                ) : (
-                                    <div className="modal-error-box">
-                                        <p>Aucun contrat n'a encore été généré pour cette tontine.</p>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-
-                        {contractText && (
-                            <div className="modal-footer-web">
-                                <label className="modal-checkbox-label">
-                                    <input 
-                                        type="checkbox" 
-                                        checked={accepted} 
-                                        onChange={(e) => setAccepted(e.target.checked)} 
-                                    />
-                                    <span>J'ai lu et j'accepte les conditions du contrat</span>
-                                </label>
-                                <button 
-                                    className="modal-confirm-btn" 
-                                    disabled={!accepted || joining}
-                                    onClick={handleConfirmJoin}
-                                >
-                                    {joining ? 'Traitement...' : 'Signer et Rejoindre'}
-                                </button>
-                            </div>
-                        )}
-                    </div>
-                </div>
-            )}
         </div>
     );
 };

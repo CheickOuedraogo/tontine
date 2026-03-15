@@ -183,19 +183,6 @@ SET default_tablespace = '';
 
 SET default_table_access_method = heap;
 
---
--- Name: Contrat; Type: TABLE; Schema: public; Owner: postgres
---
-
-CREATE TABLE public."Contrat" (
-    id uuid DEFAULT public.uuid_generate_v4() NOT NULL,
-    "tontineId" uuid NOT NULL,
-    "texteContrat" text NOT NULL,
-    "dateCreation" timestamp with time zone DEFAULT now() NOT NULL
-);
-
-
-ALTER TABLE public."Contrat" OWNER TO postgres;
 
 --
 -- Name: Cotisation; Type: TABLE; Schema: public; Owner: postgres
@@ -297,7 +284,6 @@ CREATE TABLE public."Participation" (
     "ordreDistribution" integer,
     "aRecu" boolean DEFAULT false NOT NULL,
     "dateAdhesion" timestamp with time zone DEFAULT now() NOT NULL,
-    "aSigneContrat" boolean DEFAULT false NOT NULL,
     "statutVerifIdentite" public.statut_verif_enum DEFAULT 'NON_SOUMIS'::public.statut_verif_enum NOT NULL,
     "pieceIdentiteUrl" text,
     "aValideDeblocage" boolean DEFAULT false NOT NULL
@@ -306,21 +292,6 @@ CREATE TABLE public."Participation" (
 
 ALTER TABLE public."Participation" OWNER TO postgres;
 
---
--- Name: SignatureContrat; Type: TABLE; Schema: public; Owner: postgres
---
-
-CREATE TABLE public."SignatureContrat" (
-    id uuid DEFAULT public.uuid_generate_v4() NOT NULL,
-    "contratId" uuid NOT NULL,
-    "userId" uuid NOT NULL,
-    "dateSignature" timestamp with time zone DEFAULT now() NOT NULL,
-    "ipAddress" inet,
-    accepte boolean DEFAULT true NOT NULL
-);
-
-
-ALTER TABLE public."SignatureContrat" OWNER TO postgres;
 
 --
 -- Name: Tontine; Type: TABLE; Schema: public; Owner: postgres
@@ -376,20 +347,6 @@ CREATE TABLE public."User" (
 
 ALTER TABLE public."User" OWNER TO postgres;
 
---
--- Name: Contrat Contrat_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public."Contrat"
-    ADD CONSTRAINT "Contrat_pkey" PRIMARY KEY (id);
-
-
---
--- Name: Contrat Contrat_tontineId_key; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public."Contrat"
-    ADD CONSTRAINT "Contrat_tontineId_key" UNIQUE ("tontineId");
 
 
 --
@@ -456,20 +413,6 @@ ALTER TABLE ONLY public."Participation"
     ADD CONSTRAINT "Participation_userId_tontineId_key" UNIQUE ("userId", "tontineId");
 
 
---
--- Name: SignatureContrat SignatureContrat_contratId_userId_key; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public."SignatureContrat"
-    ADD CONSTRAINT "SignatureContrat_contratId_userId_key" UNIQUE ("contratId", "userId");
-
-
---
--- Name: SignatureContrat SignatureContrat_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public."SignatureContrat"
-    ADD CONSTRAINT "SignatureContrat_pkey" PRIMARY KEY (id);
 
 
 --
@@ -580,11 +523,6 @@ CREATE INDEX idx_participation_tontine ON public."Participation" USING btree ("t
 CREATE INDEX idx_participation_user ON public."Participation" USING btree ("userId");
 
 
---
--- Name: idx_signature_contrat; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX idx_signature_contrat ON public."SignatureContrat" USING btree ("contratId");
 
 
 --
@@ -608,12 +546,6 @@ CREATE INDEX idx_user_email_verification_token ON public."User" USING btree ("em
 CREATE INDEX idx_user_reset_password_token ON public."User" USING btree ("resetPasswordToken");
 
 
---
--- Name: Contrat Contrat_tontineId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public."Contrat"
-    ADD CONSTRAINT "Contrat_tontineId_fkey" FOREIGN KEY ("tontineId") REFERENCES public."Tontine"(id) ON DELETE CASCADE;
 
 
 --
@@ -696,20 +628,6 @@ ALTER TABLE ONLY public."Participation"
     ADD CONSTRAINT "Participation_userId_fkey" FOREIGN KEY ("userId") REFERENCES public."User"(id) ON DELETE RESTRICT;
 
 
---
--- Name: SignatureContrat SignatureContrat_contratId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public."SignatureContrat"
-    ADD CONSTRAINT "SignatureContrat_contratId_fkey" FOREIGN KEY ("contratId") REFERENCES public."Contrat"(id) ON DELETE CASCADE;
-
-
---
--- Name: SignatureContrat SignatureContrat_userId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public."SignatureContrat"
-    ADD CONSTRAINT "SignatureContrat_userId_fkey" FOREIGN KEY ("userId") REFERENCES public."User"(id) ON DELETE RESTRICT;
 
 
 --

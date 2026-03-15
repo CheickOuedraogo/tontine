@@ -191,13 +191,23 @@ export const CotisationsScreen = () => {
                                             </div>
                                         )}
 
-                                        {!isPayee && (
-                                            <button className="pay-now-btn" onClick={() => openPayment(item)}>
-                                                <Smartphone size={16} />
-                                                <span>Payer ma contribution</span>
-                                                <ChevronRight size={16} />
-                                            </button>
-                                        )}
+                                        {!isPayee && (() => {
+                                            const hasUnpaidPrevious = cotisations.some((c: any) => 
+                                                c.statut !== 'PAYEE' && c.cycleNumero < item.cycleNumero
+                                            );
+                                            return (
+                                                <button 
+                                                    className={`pay-now-btn ${hasUnpaidPrevious ? 'disabled' : ''}`} 
+                                                    onClick={() => !hasUnpaidPrevious && openPayment(item)}
+                                                    disabled={hasUnpaidPrevious}
+                                                    title={hasUnpaidPrevious ? "Payez d'abord vos tours précédents" : ""}
+                                                >
+                                                    {hasUnpaidPrevious ? <AlertCircle size={16} /> : <Smartphone size={16} />}
+                                                    <span>{hasUnpaidPrevious ? 'Tour précédent impayé' : 'Payer ma contribution'}</span>
+                                                    {!hasUnpaidPrevious && <ChevronRight size={16} />}
+                                                </button>
+                                            );
+                                        })()}
                                     </div>
                                 </div>
                             );
@@ -259,17 +269,6 @@ export const CotisationsScreen = () => {
                                             </div>
                                         </div>
 
-                                        <div className="recipient-info-card">
-                                            <div className="recipient-avatar-web">
-                                                {creatorName ? creatorName.charAt(0).toUpperCase() : 'C'}
-                                            </div>
-                                            <div className="recipient-text-web">
-                                                <span className="label-r">Destinataire</span>
-                                                <span className="name-r">{creatorName || 'Créateur'}</span>
-                                                <span className="phone-r">{creatorPhone}</span>
-                                            </div>
-                                            <Shield size={16} color="var(--success)" />
-                                        </div>
 
                                         <div className="operator-selector-web">
                                             <label>Méthode de paiement</label>
@@ -336,7 +335,6 @@ export const CotisationsScreen = () => {
                                 <div className="receipt-details">
                                     <div className="receipt-row"><span>Référence</span><strong>{simRef}</strong></div>
                                     <div className="receipt-row"><span>Tour</span><strong>{selectedCotisation?.cycleNumero}</strong></div>
-                                    <div className="receipt-row"><span>Vers</span><strong>{creatorName}</strong></div>
                                     <div className="receipt-row"><span>Date</span><strong>{new Date().toLocaleString('fr-FR')}</strong></div>
                                 </div>
 

@@ -1,63 +1,166 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { tontineApi } from '../../api/tontine';
-import { useTontineStore } from '../../store/useTontineStore';
 import { useAuthStore } from '../../store/useAuthStore';
 import { apiClient } from '../../api/client';
 import {
-    Wallet, Users, MessageCircle, Settings, Clock,
-    ArrowLeft, CreditCard, BarChart3, UserPlus, Trash2, Play, ChevronRight
+    Users, Wallet, Calendar, Shield, CreditCard, 
+    Trash2, Play, UserPlus,
+    ArrowLeft, ArrowUp, ArrowDown, Save, BarChart3, MessageSquare
 } from 'lucide-react';
+import { Button } from '../../components/ui/Button';
+import { useModal } from '../../context/ModalContext';
 import './TontineDetailsScreen.css';
+
+const ActionCard = ({ icon, title, subtitle, onClick }: any) => (
+    <button className="action-card premium-card" onClick={onClick}>
+        <div className="action-icon-wrapper">
+            {icon}
+        </div>
+        <div className="action-text">
+            <h3>{title}</h3>
+            <p>{subtitle}</p>
+        </div>
+        <Shield size={16} className="action-chevron" />
+    </button>
+);
 
 export const TontineDetailsScreen = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
-    const user = useAuthStore(state => state.user);
+    const { showAlert, showConfirm } = useModal();
+    const currentUser = useAuthStore(state => state.user);
 
-    const { currentTontine, isLoading, fetchTontineDetails, deleteTontine } = useTontineStore();
+    const [tontine, setTontine] = useState<any>(null);
+    const [members, setMembers] = useState<any[]>([]);
     const [membresCount, setMembresCount] = useState(0);
+    const [isCreator, setIsCreator] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
+    const [orderChanged, setOrderChanged] = useState(false);
+    const [isSavingOrder, setIsSavingOrder] = useState(false);
 
-    const loadData = useCallback(() => {
+    const loadTontine = useCallback(async () => {
         if (!id) return;
-        fetchTontineDetails(id);
-        apiClient.get(`/tontines/${id}/membres`).then(res => {
-            const m = res.data.membres || res.data.data || [];
+        setIsLoading(true);
+        try {
+            const res = await apiClient.get(`/tontines/${id}`);
+            const data = res.data.tontine || res.data;
+            setTontine(data);
+            setIsCreator(String(data.creatorId) === String(currentUser?.id));
+            
+            const resM = await apiClient.get(`/tontines/${id}/membres`);
+            const m = resM.data.membres || resM.data.data || [];
+            
+            // Si la tontine est active, on récupère les distributions pour afficher le statut
+            if (data.statut !== 'EN_ATTENTE') {
+                try {
+                    const resD = await apiClient.get(`/distributions/tontine/${id}`);
+                    const dists = resD.data.distributions || resD.data.data || resD.data || [];
+                    
+                    // On mappe les distributions aux membres
+                    const membersWithDist = (Array.isArray(m) ? m : []).map(member => {
+                        const dist = dists.find((d: any) => String(d.beneficiaireId) === String(member.userId));
+                        return { ...member, distribution: dist };
+                    });
+                    setMembers(membersWithDist);
+                } catch (err) {
+                    setMembers(Array.isArray(m) ? m : []);
+                }
+            } else {
+                setMembers(Array.isArray(m) ? m : []);
+            }
+            
             setMembresCount(Array.isArray(m) ? m.length : 0);
-        }).catch(() => { });
-    }, [id, fetchTontineDetails]);
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setIsLoading(false);
+        }
+    }, [id, currentUser?.id]);
 
     useEffect(() => {
-        loadData();
-    }, [loadData]);
+        loadTontine();
+    }, [loadTontine]);
+
+    const handleRemoveMember = async (userId: number) => {
+        const confirmed = await showConfirm(
+            'Retirer un membre',
+            'Êtes-vous sûr de vouloir retirer ce membre ?'
+        );
+        if (!confirmed) return;
+
+        try {
+            await apiClient.delete(`/tontines/${id}/membres/${userId}`);
+            loadTontine();
+        } catch (err: any) {
+            showAlert('Erreur', err.response?.data?.message || 'Impossible de retirer le membre.', 'error');
+        }
+    };
+
+    const handleMoveMember = (index: number, direction: 'up' | 'down') => {
+        const newMembers = [...members];
+        const targetIndex = direction === 'up' ? index - 1 : index + 1;
+        if (targetIndex < 0 || targetIndex >= members.length) return;
+
+        const temp = newMembers[index];
+        newMembers[index] = newMembers[targetIndex];
+        newMembers[targetIndex] = temp;
+        setMembers(newMembers);
+        setOrderChanged(true);
+    };
+
+    const handleSaveOrder = async () => {
+        setIsSavingOrder(true);
+        try {
+            const ordre = members.map(m => m.userId);
+            await apiClient.put(`/tontines/${id}/membres/ordre`, { ordre });
+            showAlert('Succès', 'Ordre de distribution mis à jour !', 'success');
+            setOrderChanged(false);
+        } catch (err: any) {
+            showAlert('Erreur', err.response?.data?.message || 'Impossible de sauvegarder l\'ordre.', 'error');
+        } finally {
+            setIsSavingOrder(false);
+        }
+    };
 
     const handleDelete = async () => {
-        if (window.confirm('Voulez-vous vraiment supprimer cette tontine ? Cette action est irréversible.')) {
-            const success = await deleteTontine(id!);
-            if (success) {
+        const confirmed = await showConfirm(
+            'Suppression', 
+            'Voulez-vous vraiment supprimer cette tontine ? Cette action est irréversible.'
+        );
+        
+        if (confirmed) {
+            try {
+                await apiClient.delete(`/tontines/${id}`);
                 navigate('/');
+            } catch (err) {
+                showAlert('Erreur', 'Impossible de supprimer la tontine.', 'error');
             }
         }
     };
 
     const handleStart = async () => {
         if (membresCount < 2) {
-            alert('Impossible: Il faut au moins 2 membres pour commencer.');
+            showAlert('Action impossible', 'Il faut au moins 2 membres pour commencer.', 'error');
             return;
         }
 
-        if (window.confirm('Voulez-vous commencer la tontine maintenant ?')) {
+        const confirmed = await showConfirm(
+            'Démarrage', 
+            'Voulez-vous commencer la tontine maintenant ?'
+        );
+        
+        if (confirmed) {
             try {
-                await tontineApi.startTontine(id!);
-                alert('Success: La tontine a commencé !');
-                loadData();
+                await apiClient.post(`/tontines/${id}/start`);
+                showAlert('Succès', 'La tontine a commencé !', 'success');
+                loadTontine();
             } catch (err: any) {
-                alert('Erreur: ' + (err.response?.data?.message || 'Impossible de commencer.'));
+                showAlert('Erreur', err.response?.data?.message || 'Impossible de commencer.', 'error');
             }
         }
     };
 
-    if (isLoading || !currentTontine) {
+    if (isLoading || !tontine) {
         return (
             <div className="loading-state">
                 <div className="spinner large"></div>
@@ -66,8 +169,6 @@ export const TontineDetailsScreen = () => {
         );
     }
 
-    const isCreator = String(currentTontine.creatorId) === String(user?.id);
-
     return (
         <div className="tontine-details-page">
             <header className="details-header">
@@ -75,115 +176,159 @@ export const TontineDetailsScreen = () => {
                     <ArrowLeft size={20} />
                 </button>
                 <div className="header-titles">
-                    <h1>{currentTontine.nom}</h1>
-                    <span className={`status-pill ${currentTontine.statut.toLowerCase()}`}>
-                        {currentTontine.statut}
+                    <h1>Détails de la Tontine</h1>
+                    <span className={`status-pill ${tontine.statut === 'ACTIVE' ? 'active' : ''}`}>
+                        {tontine.statut}
                     </span>
                 </div>
             </header>
 
             <div className="details-grid">
-                {/* Stats Section */}
-                <div className="stats-container">
-                    <div className="premium-card stat-item">
-                        <Wallet className="stat-icon wallet" size={24} />
+                <section className="stats-container">
+                    <div className="stat-item premium-card">
+                        <div className="stat-icon wallet">
+                            <Wallet size={24} />
+                        </div>
                         <div className="stat-info">
-                            <span className="stat-label">Cotisation</span>
-                            <span className="stat-value">{Number(currentTontine.montantCotisation).toLocaleString('fr-FR')} F</span>
+                            <span className="stat-label">Montant</span>
+                            <span className="stat-value">{Number(tontine.montantCotisation).toLocaleString()} F</span>
                         </div>
                     </div>
-                    <div className="premium-card stat-item">
-                        <Clock className="stat-icon interval" size={24} />
+
+                    <div className="stat-item premium-card">
+                        <div className="stat-icon interval">
+                            <Calendar size={24} />
+                        </div>
                         <div className="stat-info">
-                            <span className="stat-label">Intervalle</span>
-                            <span className="stat-value">Tous les {(currentTontine as any).intervalleJours || '?'} jours</span>
+                            <span className="stat-label">Fréquence</span>
+                            <span className="stat-value">{tontine.frequence}</span>
                         </div>
                     </div>
-                    <div className="premium-card stat-item">
-                        <Users className="stat-icon members" size={24} />
+
+                    <div className="stat-item premium-card">
+                        <div className="stat-icon members">
+                            <Users size={24} />
+                        </div>
                         <div className="stat-info">
                             <span className="stat-label">Membres</span>
-                            <span className="stat-value">{membresCount}/{currentTontine.nbMembresAttendu}</span>
+                            <span className="stat-value">{membresCount} / {tontine.nbMembresAttendu}</span>
                         </div>
                     </div>
-                </div>
+                </section>
 
-                {/* Actions Section */}
-                <div className="actions-section">
-                    <h2>Actions & Gestion</h2>
+                <section className="actions-section">
+                    <h2>Actions Rapides</h2>
                     <div className="actions-grid">
                         <ActionCard
-                            icon={<CreditCard color="#6366F1" size={24} />}
+                            icon={<CreditCard color="#10B981" size={24} />}
                             title="Cotisations"
-                            subtitle="Payer mes cotisations"
+                            subtitle="Mes paiements"
                             onClick={() => navigate(`/tontines/${id}/cotisations`)}
                         />
-                        <ActionCard
-                            icon={<BarChart3 color="#059669" size={24} />}
-                            title="Historique"
-                            subtitle="Paiements effectués"
-                            onClick={() => navigate(`/tontines/${id}/payments`)}
-                        />
-                        <ActionCard
-                            icon={<Wallet color="#D97706" size={24} />}
-                            title="Distributions"
-                            subtitle="Cagnottes versées"
-                            onClick={() => navigate(`/tontines/${id}/distributions`)}
-                        />
-                        <ActionCard
-                            icon={<MessageCircle color="#F59E0B" size={24} />}
-                            title="Chat"
+                         <ActionCard
+                            icon={<MessageSquare color="#6366F1" size={24} />}
+                            title="Discussion"
                             subtitle="Discussion du groupe"
                             onClick={() => navigate(`/tontines/${id}/chat`)}
                         />
-                        {isCreator && currentTontine.statut === 'EN_ATTENTE' && membresCount < currentTontine.nbMembresAttendu && (
+                        {isCreator && (
                             <ActionCard
-                                icon={<UserPlus color="#6366F1" size={24} />}
+                                icon={<BarChart3 color="#F59E0B" size={24} />}
+                                title="Statistiques"
+                                subtitle="Suivi des cotisations"
+                                onClick={() => navigate(`/tontines/${id}/cotisations/stats`)}
+                            />
+                        )}
+                        {isCreator && tontine.statut === 'EN_ATTENTE' && membresCount < tontine.nbMembresAttendu && (
+                            <ActionCard
+                                icon={<UserPlus color="#8B5CF6" size={24} />}
                                 title="Inviter"
                                 subtitle="Ajouter des membres"
                                 onClick={() => navigate(`/tontines/${id}/invite`)}
                             />
                         )}
-                        {isCreator && (
-                            <ActionCard
-                                icon={<Settings color="#64748B" size={24} />}
-                                title="Admin"
-                                subtitle="Gérer la tontine"
-                                onClick={() => navigate(`/tontines/${id}/admin`)}
-                            />
-                        )}
-                        {isCreator && currentTontine.statut === 'EN_ATTENTE' && (
-                            <ActionCard
-                                icon={<Trash2 color="#EF4444" size={24} />}
-                                title="Supprimer"
-                                subtitle="Annuler la tontine"
-                                onClick={handleDelete}
-                                variant="danger"
-                            />
-                        )}
-                        {isCreator && currentTontine.statut === 'EN_ATTENTE' && (
-                            <ActionCard
-                                icon={<Play color="#6366F1" size={24} />}
-                                title="Commencer"
-                                subtitle="Démarrer la tontine"
-                                onClick={handleStart}
-                                variant="primary"
+                    </div>
+                </section>
+
+                <section className="members-management-section">
+                    <div className="section-header-admin">
+                        <h2>Membres & Ordre ({membresCount})</h2>
+                        {isCreator && tontine.statut === 'EN_ATTENTE' && orderChanged && (
+                            <Button 
+                                title="Enregistrer l'ordre" 
+                                icon={Save} 
+                                onClick={handleSaveOrder}
+                                isLoading={isSavingOrder}
                             />
                         )}
                     </div>
-                </div>
+                    
+                    <div className="members-list-details premium-card">
+                        {members.map((m, i) => (
+                            <div key={m.userId} className="member-row-details">
+                                <span className="member-rank">{i + 1}</span>
+                                <div className="member-avatar-small">
+                                    {m.photo ? (
+                                        <img src={m.photo.startsWith('http') ? m.photo : `http://localhost:3000${m.photo}`} alt="" />
+                                    ) : (
+                                        <span>{m.prenom[0]}</span>
+                                    )}
+                                </div>
+                                    <div className="member-info-small">
+                                        <span className="m-name">{m.prenom} {m.nom}</span>
+                                        <span className="m-email">{m.email}</span>
+                                    </div>
+                                    
+                                    {m.distribution && (
+                                        <div className="member-distribution-status">
+                                            <span className="dist-amount">{Number(m.distribution.montantNet).toLocaleString('fr-FR')} F</span>
+                                            <span className={`dist-pill ${m.distribution.statut}`}>
+                                                {m.distribution.statut === 'EFFECTUEE' ? 'Reçu' : 'En attente'}
+                                            </span>
+                                        </div>
+                                    )}
+                                
+                                {isCreator && tontine.statut === 'EN_ATTENTE' && (
+                                    <div className="member-actions-small">
+                                        <button className="arrow-btn" onClick={() => handleMoveMember(i, 'up')} disabled={i === 0}>
+                                            <ArrowUp size={14} />
+                                        </button>
+                                        <button className="arrow-btn" onClick={() => handleMoveMember(i, 'down')} disabled={i === members.length - 1}>
+                                            <ArrowDown size={14} />
+                                        </button>
+                                        <button className="remove-btn" onClick={() => handleRemoveMember(m.userId)}>
+                                            <Trash2 size={14} />
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                </section>
+
+                {isCreator && tontine.statut === 'EN_ATTENTE' && (
+                    <section className="creator-actions">
+                        <div className="admin-banner premium-card">
+                            <div className="banner-text">
+                                <h3 style={{ padding: '0.5rem 0', textAlign: 'center' }}>Lancer la tontine</h3>
+                            </div>
+                            <div className="banner-btns">
+                                <Button 
+                                    title="Démarrer" 
+                                    icon={Play}
+                                    onClick={handleStart}
+                                />
+                                <Button 
+                                    title="Supprimer" 
+                                    variant="danger"
+                                    icon={Trash2}
+                                    onClick={handleDelete}
+                                />
+                            </div>
+                        </div>
+                    </section>
+                )}
             </div>
         </div>
     );
 };
-
-const ActionCard = ({ icon, title, subtitle, onClick, variant }: { icon: React.ReactNode; title: string; subtitle: string; onClick: () => void; variant?: string }) => (
-    <button className={`action-card premium-card ${variant || ''}`} onClick={onClick}>
-        <div className="action-icon-wrapper">{icon}</div>
-        <div className="action-text">
-            <h3>{title}</h3>
-            <p>{subtitle}</p>
-        </div>
-        <ChevronRight size={18} className="action-chevron" />
-    </button>
-);
