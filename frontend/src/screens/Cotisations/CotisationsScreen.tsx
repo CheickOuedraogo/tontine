@@ -125,7 +125,7 @@ export const CotisationsScreen = () => {
     return (
         <div className="cotisations-page">
             <header className="details-header cotisations-header">
-                <button onClick={() => navigate(-1)} className="back-btn-details inverse">
+                <button onClick={() => navigate(-1)} className="back-btn-details">
                     <ArrowLeft size={20} />
                 </button>
                 <div className="header-titles">
@@ -133,15 +133,15 @@ export const CotisationsScreen = () => {
                     <div className="header-stats-web">
                         <div className="stat-pill">
                             <ArrowUpCircle size={16} color="#34D399" />
-                            <span>{totalPaid} Payées</span>
+                            <span style={{ color: '#000000ff' }}>{totalPaid} Payées</span>
                         </div>
                         <div className="stat-pill">
                             <Clock size={16} color="#FBBF24" />
-                            <span>{totalPending} En attente</span>
+                            <span style={{ color: '#000000ff' }}>{totalPending} En attente</span>
                         </div>
                         <div className="stat-pill">
                             <TrendingUp size={16} color="#A78BFA" />
-                            <span>{totalAmount.toLocaleString('fr-FR')} FCFA</span>
+                            <span style={{ color: '#000000ff' }}>{totalAmount.toLocaleString('fr-FR')} FCFA</span>
                         </div>
                     </div>
                 </div>

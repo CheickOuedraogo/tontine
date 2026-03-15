@@ -60,7 +60,7 @@ export const PaymentHistoryScreen = () => {
     return (
         <div className="payment-history-page">
             <header className="details-header history-header">
-                <button onClick={() => navigate(-1)} className="back-btn-details inverse">
+                <button onClick={() => navigate(-1)} className="back-btn-details">
                     <ArrowLeft size={20} />
                 </button>
                 <div className="header-titles">

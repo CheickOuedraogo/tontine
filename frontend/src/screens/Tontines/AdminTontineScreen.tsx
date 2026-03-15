@@ -110,7 +110,6 @@ export const AdminTontineScreen = () => {
                 </button>
                 <div className="header-titles">
                     <div className="title-with-icon-header">
-                        <Settings size={20} color="white" />
                         <h1>Administration</h1>
                     </div>
                     <p className="tontine-context-name">{tontine?.nom}</p>
@@ -146,7 +145,7 @@ export const AdminTontineScreen = () => {
                 <section className="admin-card members-section premium-card">
                     <div className="section-header">
                         <h3>Membres ({membersCount} / {tontine?.nbMembresAttendu})</h3>
-                        {isCreator && (
+                        {isCreator && isEnAttente && membersCount < (tontine?.nbMembresAttendu || 0) && (
                             <button 
                                 className="invite-btn-mini"
                                 onClick={() => navigate(`/tontines/${tontineId}/invite`)}
@@ -231,9 +230,6 @@ export const AdminTontineScreen = () => {
                         </button>
                         <button className="admin-action-btn" onClick={() => navigate(`/tontines/${tontineId}/distributions`)}>
                             Plan de Distribution
-                        </button>
-                        <button className="admin-action-btn" onClick={() => navigate(`/tontines/${tontineId}/chat`)}>
-                            Accéder au Chat
                         </button>
                     </div>
                 </section>

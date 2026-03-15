@@ -11,8 +11,15 @@ export const StatistiquesCotisationsScreen = () => {
     const navigate = useNavigate();
 
     const [cotisations, setCotisations] = useState<any[]>([]);
+    const [tontine, setTontine] = useState<any>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [cycleNumero, setCycleNumero] = useState<number | null>(null);
+
+    useEffect(() => {
+        apiClient.get(`/tontines/${tontineId}`).then(res => {
+            setTontine(res.data.tontine || res.data);
+        }).catch(() => {});
+    }, [tontineId]);
 
     useEffect(() => {
         const loadStatistiques = async () => {
@@ -48,7 +55,9 @@ export const StatistiquesCotisationsScreen = () => {
         }
     };
 
-    const cycles = [...new Set(cotisations.map(c => c.cycleNumero))].sort((a, b) => a - b);
+    const cycles = tontine?.dureeTotale 
+        ? Array.from({ length: tontine.dureeTotale }, (_, i) => i + 1)
+        : [...new Set(cotisations.map(c => c.cycleNumero))].sort((a, b) => a - b);
     
     const totalPaid = cotisations.filter(c => c.statut === 'PAYEE').length;
     const totalPending = cotisations.filter(c => c.statut !== 'PAYEE').length;
@@ -57,7 +66,7 @@ export const StatistiquesCotisationsScreen = () => {
     return (
         <div className="stats-cotisations-page">
             <header className="details-header stats-header">
-                <button onClick={() => navigate(-1)} className="back-btn-details inverse">
+                <button onClick={() => navigate(-1)} className="back-btn-details">
                     <ArrowLeft size={20} />
                 </button>
                 <div className="header-titles">

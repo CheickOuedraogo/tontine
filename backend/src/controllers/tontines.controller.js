@@ -92,7 +92,7 @@ const startTontine = asyncHandler(async (req, res) => {
   // Utiliser la date actuelle par défaut
   const dateDebut = new Date();
   const realNbMembres = updatedMembres.length;
-  const dureeTotale = 1; // Une seule distribution par tontine
+  const dureeTotale = realNbMembres; // Chaque membre reçoit une distribution à son tour
   
   // Mettre à jour la tontine avec les vraies valeurs
   await db.query(

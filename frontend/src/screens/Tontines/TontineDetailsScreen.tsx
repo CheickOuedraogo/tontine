@@ -136,7 +136,7 @@ export const TontineDetailsScreen = () => {
                             subtitle="Discussion du groupe"
                             onClick={() => navigate(`/tontines/${id}/chat`)}
                         />
-                        {isCreator && (
+                        {isCreator && currentTontine.statut === 'EN_ATTENTE' && membresCount < currentTontine.nbMembresAttendu && (
                             <ActionCard
                                 icon={<UserPlus color="#6366F1" size={24} />}
                                 title="Inviter"

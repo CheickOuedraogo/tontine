@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { type Tontine, tontineApi, type CreateTontinePayload } from '../api/tontine';
-import { type AppNotification, notificationApi } from '../api/notification';
+
 import { apiClient } from '../api/client';
 
 interface TontineState {

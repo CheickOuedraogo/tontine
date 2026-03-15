@@ -25,7 +25,8 @@ export const ChatScreen = () => {
         return () => {
             disconnect();
         };
-    }, [tontineId, connect, disconnect]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [tontineId]);
 
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });

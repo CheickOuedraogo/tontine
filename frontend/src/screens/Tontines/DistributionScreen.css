@@ -3,19 +3,7 @@
 }
 
 .distribution-header {
-  background: var(--primary-darker);
-  color: white;
-}
-
-.back-btn-details.inverse {
-  background: rgba(255, 255, 255, 0.2);
-  color: white;
-  box-shadow: none;
-}
-
-.back-btn-details.inverse:hover {
-  background: rgba(255, 255, 255, 0.3);
-  color: white;
+  /* Transparent */
 }
 
 .distribution-content-container {

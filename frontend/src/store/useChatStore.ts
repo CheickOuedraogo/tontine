@@ -32,23 +32,26 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
     connect: async (tontineId: string) => {
         const token = localStorage.getItem('token');
-        const { currentTontineId } = get();
 
-        if (get().socket) {
-            get().socket?.disconnect();
+        // Nettoyer proprement l'ancien socket et ses listeners
+        const oldSocket = get().socket;
+        if (oldSocket) {
+            oldSocket.removeAllListeners();
+            oldSocket.disconnect();
         }
 
-        if (currentTontineId !== tontineId) {
-            set({ messages: [], currentTontineId: tontineId });
-        }
+        set({ messages: [], currentTontineId: tontineId, socket: null, isConnected: false });
 
         const socket = io(SOCKET_URL, {
             auth: { token },
             transports: ['websocket', 'polling'],
         });
 
+        // Stocker le socket immédiatement pour éviter les créations multiples
+        set({ socket });
+
         socket.on('connect', () => {
-            set({ isConnected: true, socket });
+            set({ isConnected: true });
             socket.emit('join_room', { tontineId });
         });
 
@@ -72,6 +75,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
     disconnect: () => {
         const { socket } = get();
         if (socket) {
+            socket.removeAllListeners();
             socket.disconnect();
             set({ socket: null, isConnected: false });
         }
@@ -85,8 +89,12 @@ export const useChatStore = create<ChatState>((set, get) => ({
     },
 
     addMessage: (message: ChatMessage) => {
-        set((state) => ({
-            messages: [message, ...state.messages]
-        }));
+        set((state) => {
+            // Éviter les doublons par id
+            if (message.id && state.messages.some(m => m.id === message.id)) {
+                return state;
+            }
+            return { messages: [message, ...state.messages] };
+        });
     }
 }));

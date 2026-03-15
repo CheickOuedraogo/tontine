@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { apiClient } from '../../api/client';
-import { ArrowLeft, Award, Calendar, TrendingUp, Wallet, CheckCircle2, Clock, XCircle } from 'lucide-react';
+import { ArrowLeft, Calendar, TrendingUp, Wallet, CheckCircle2, Clock, XCircle } from 'lucide-react';
 import './DistributionScreen.css';
 
 interface Distribution {
@@ -51,8 +51,6 @@ export const DistributionScreen = () => {
         .filter(d => d.statut === 'EFFECTUEE')
         .reduce((s, d) => s + Number(d.montantNet), 0);
 
-    const nextDistribution = distributions.find(d => d.statut === 'PLANIFIEE');
-
     const getStatusIcon = (statut: string) => {
         switch (statut) {
             case 'EFFECTUEE': return <CheckCircle2 size={16} />;
@@ -64,7 +62,7 @@ export const DistributionScreen = () => {
     return (
         <div className="distribution-page">
             <header className="details-header distribution-header">
-                <button onClick={() => navigate(-1)} className="back-btn-details inverse">
+                <button onClick={() => navigate(-1)} className="back-btn-details">
                     <ArrowLeft size={20} />
                 </button>
                 <div className="header-titles">
@@ -83,23 +81,6 @@ export const DistributionScreen = () => {
             </header>
 
             <div className="distribution-content-container">
-                {nextDistribution && (
-                    <div className="next-beneficiary-card premium-card">
-                        <div className="next-badge">PROCHAIN TOURNANT</div>
-                        <div className="next-main-info">
-                            <div className="next-icon-wrapper">
-                                <Award size={24} />
-                            </div>
-                            <div className="next-text">
-                                <h3>{nextDistribution.prenom} {nextDistribution.nom}</h3>
-                                <p>Tour {nextDistribution.cycleNumero} • {new Date(nextDistribution.datePrevue).toLocaleDateString('fr-FR', { month: 'long', day: 'numeric' })}</p>
-                            </div>
-                            <div className="next-amount">
-                                {Number(nextDistribution.montantNet).toLocaleString('fr-FR')} F
-                            </div>
-                        </div>
-                    </div>
-                )}
 
                 {isLoading ? (
                     <div className="loading-state">

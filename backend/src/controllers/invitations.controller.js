@@ -171,7 +171,7 @@ const refuserInvitation = asyncHandler(async (req, res) => {
   if (invitation.statut !== 'EN_ATTENTE') throw new ApiError(400, 'Invitation deja traitee');
   
   const user = await userQ.findById(req.user.id);
-  if (user.email !== invitation.emailInvite) {
+  if (user.email.toLowerCase() !== invitation.emailInvite.toLowerCase()) {
     throw new ApiError(403, 'Cette invitation n\'est pas pour vous');
   }
   

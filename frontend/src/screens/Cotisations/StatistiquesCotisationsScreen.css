@@ -2,16 +2,12 @@
   animation: fadeIn 0.4s ease-out;
 }
 
-.stats-header {
-  background: var(--primary-darker);
-  color: white;
-}
+
 
 .filters-row-web {
   display: flex;
   gap: 10px;
   padding: 20px;
-  background: white;
   border-bottom: 1px solid var(--border);
   overflow-x: auto;
   white-space: nowrap;
