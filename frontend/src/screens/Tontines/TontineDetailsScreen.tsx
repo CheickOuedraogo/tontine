@@ -313,17 +313,21 @@ export const TontineDetailsScreen = () => {
                                 <h3 style={{ padding: '0.5rem 0', textAlign: 'center' }}>Lancer la tontine</h3>
                             </div>
                             <div className="banner-btns">
-                                <Button 
-                                    title="Démarrer" 
-                                    icon={Play}
-                                    onClick={handleStart}
-                                />
-                                <Button 
-                                    title="Supprimer" 
-                                    variant="danger"
-                                    icon={Trash2}
-                                    onClick={handleDelete}
-                                />
+                                <div style={{padding: 10}}>
+                                    <Button 
+                                        title="Démarrer" 
+                                        icon={Play}
+                                        onClick={handleStart}
+                                    />
+                                </div>
+                                <div style={{padding: 10}}>
+                                    <Button 
+                                        title="Supprimer" 
+                                        variant="danger"
+                                        icon={Trash2}
+                                        onClick={handleDelete}
+                                    />
+                                </div>
                             </div>
                         </div>
                     </section>
